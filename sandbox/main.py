@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import copy, math
+import copy
+import math
 from enum import Enum
 from itertools import permutations
 
-n = 256
+n = 64
 deltas = [.1, .3, .4]
 
 image = np.random.randint(100, size=(n, n))
@@ -22,8 +23,8 @@ class SimulatedAnnealingImage:
         self.max_iterations = max_iterations
 
     def run(self):
-        # fig, ax = plt.subplots()
-        # ims = []
+        fig, ax = plt.subplots()
+        ims = []
 
         state, state_energy = copy.copy(self.initial_solution), self.__E(self.initial_solution)
         solution, solution_energy = copy.copy(state), state_energy
@@ -34,9 +35,12 @@ class SimulatedAnnealingImage:
             #     break
 
             # Progress bar
-            if c % 10000 == 0:
-                p = c / self.max_iterations
-                print(f"\r[{'=' * math.ceil((25 * c / p))}{' ' * math.floor((25 * (1 - p)))}]", end='')
+            # if c % 20000 == 0:
+            #     p = c / self.max_iterations
+            #     if p > 0:
+            #         print(f"\r[{'=' * math.ceil((25 * c / p))}{' ' * math.floor((25 * (1 - p)))}]", end='')
+            #     else:
+            #         print(f"\r[{' ' * 25}]", end='')
 
             i, j = np.random.randint(n, size=2)
             neighbour = self.neighbour(state, (i, j))
@@ -54,15 +58,14 @@ class SimulatedAnnealingImage:
 
             self.T *= self.gamma
 
-            # if c % 10000 == 0:
-            #     print(c)
-            #     if c == 0:
-            #         ax.imshow(solution)
-            #     im = ax.imshow(solution, animated=True)
-            #     ims.append([im])
+            if c % 10000 == 0:
+                if c == 0:
+                    ax.imshow(state, cmap="gray", vmin=0, vmax=1, interpolation="none")
+                im = ax.imshow(state, cmap="gray", vmin=0, vmax=1, interpolation="none", animated=True)
+                ims.append([im])
 
-        # ani = animation.ArtistAnimation(fig, ims, interval=50)
-        # plt.show()
+        ani = animation.ArtistAnimation(fig, ims, interval=100)
+        plt.show()
 
         print(f"\r{' ' * 50}")
         return state, self.__E(state)
