@@ -25,6 +25,9 @@ def init(request):
     bag_of_words: dict[str, int] = {}
     words_base: list[str] = []
 
+    def idf(i: int):
+        return np.log10(n / A.getrow(i).getnnz(1))
+
     #
     # Init dictionary of words occurred at least once in all documents
     #
@@ -43,12 +46,11 @@ def init(request):
     #
     # Iterate document-wise over files
     #
+    row, col, values = [], [], []
     for filename in filenames:
         with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
             parser = WikiParser(file)
 
-            row, col, values = [], [], []
-            
             while (words := parser.parse_document()) is not None:    
                 di = copy(bag_of_words)
 
@@ -64,7 +66,12 @@ def init(request):
 
                 n += 1
 
-        A = bsr_array((values, (row, col)), shape=(m, n))
+    A = bsr_array((values, (row, col)), shape=(m, n))
+    IDF = np.empty(m)
+    for i in range(m):
+        IDF[i] = idf(i)
+    for i, j in zip(A.row, A.col):
+        A[i, j] *= IDF[i]
 
     return HttpResponse(f"{m}, {n}")
 
