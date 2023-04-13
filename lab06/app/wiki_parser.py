@@ -10,10 +10,12 @@ class WikiParser:
     def __init__(self, file: TextIOWrapper):
         self._file = file
         self._read_mode = False
+        self.i = 0
 
     def parse_line(self) -> list[str] | None:
         line = self._file.readline()
         if line == '':
+            self._file.close()
             return None
 
         opening_idx: int = line.find(WikiParser.OPENING_CONTENT_TAG)
@@ -49,6 +51,7 @@ class WikiParser:
         while True:
             line = self._file.readline()
             if line == '':
+                self._file.close()
                 return None
 
             opening_idx: int = line.find(WikiParser.OPENING_CONTENT_TAG)
@@ -73,6 +76,4 @@ class WikiParser:
                 self._read_mode = False
                 return words
 
-        if len(words) > 1 or len(words) == 1 and not words[0]:
-            return words
-        return []
+        return None
