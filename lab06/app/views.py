@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from .wiki_parser import WikiParser
+from copy import copy
+import math
 
 # Create your views here.
 def init(request):
@@ -13,63 +15,39 @@ def init(request):
         # "enwiki-20230401-pages-articles-multistream2.xml-p41243p151573",
         # "enwiki-20230401-pages-articles-multistream3.xml-p151574p311329"
     ]
-    count = 0
-    bag_of_words = {}
+    count: int = 0
+    mx, mn = (0, ""), (math.inf, "")
+    bag_of_words: dict[str, int] = {}
+    words_base: list[str] = []
 
+    # Init dictionary of words occurred at least once in all documents
     for filename in filenames:
         with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
             parser = WikiParser(file)
 
-            while (words := parser.parse_line()) is not None:
-                count += 1
-                if count == 100000:
-                    break
-                
+            while (words := parser.parse_line()) is not None:            
+                for word in words:
+                    if bag_of_words.get(word) is None:
+                        bag_of_words[word] = 0
+            # for key in bag_of_words:
+            #     if bag_of_words[key] > mx[0]:
+            #         mx = (bag_of_words[key], key)
+            #     elif bag_of_words[key] < mn[0]:
+            #         mn = (bag_of_words[key], key)
+
+    words_base = copy(list(bag_of_words.keys()))
+
+    # Iterate document-wise over files
+    for filename in filenames:
+        with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
+            parser = WikiParser(file)
+
+            while (words := parser.parse_document()) is not None and len(words) > 0:    
+                di = copy(bag_of_words)
+
                 for word in words:
                     if bag_of_words.get(word) is None:
                         bag_of_words[word] = 0
                     bag_of_words[word] += 1
-        # with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
-        #     read_mode = False
-        #     for i, line in enumerate(file):
-        #         if i == 3000000:
-        #             break
 
-        #         opening_idx: int = line.find(OPENING_TAG)
-        #         closing_idx: int = line.find(CLOSING_TAG)
-
-        #         if opening_idx >= 0 or read_mode:
-        #             read_mode = True
-        #             if opening_idx < 0 and closing_idx < 0:
-        #                 substr = line
-        #             elif opening_idx >= 0 and closing_idx >= 0:
-        #                 substr = line[opening_idx + len(OPENING_TAG):closing_idx]
-        #             elif opening_idx >= 0 and closing_idx < 0:
-        #                 substr = line[opening_idx + len(OPENING_TAG):]
-
-        #             words = substr.split()
-        #             for word in words:
-        #                 word = word \
-        #                     .replace("[[", "") \
-        #                     .replace("]]", "") \
-        #                     .replace("{{", "") \
-        #                     .replace("}}", "") \
-        #                     .replace("''", "") \
-        #                     .replace("'''", "") \
-        #                     .replace("(", "") \
-        #                     .replace(")", "") \
-        #                     .replace(".", "") \
-        #                     .replace(",", "") \
-        #                     .lower()
-
-        #                 if word.find("|") >= 0 or word.find(":") >= 0 or word.find("\"") >= 0 or word.find(";") >= 0:
-        #                     continue
-                        
-        #                 if bag_of_words.get(word) is None:
-        #                     bag_of_words[word] = 0
-        #                 bag_of_words[word] += 1
-
-        #         if closing_idx >= 0:
-        #             read_mode = False
-
-    return HttpResponse(len(bag_of_words))
+    return HttpResponse(f"Length: {len(bag_of_words)}")

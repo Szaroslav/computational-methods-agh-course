@@ -36,28 +36,42 @@ class WikiParser:
             words = substr.replace(", ", " ").replace(". ", " ").lower().split()
             words = list(filter(lambda x: x.isalnum() and not x.isdigit(), words))
 
-            # for word in words:
-            #     word = word \
-            #         .replace("[[", "") \
-            #         .replace("]]", "") \
-            #         .replace("{{", "") \
-            #         .replace("}}", "") \
-            #         .replace("''", "") \
-            #         .replace("'''", "") \
-            #         .replace("(", "") \
-            #         .replace(")", "") \
-            #         .replace(".", "") \
-            #         .replace(",", "") \
-            #         .lower()
-
-            #     if not word.isalnum():
-            #         continue
-
-            #     if word.find("|") >= 0 or word.find(":") >= 0 or word.find("\"") >= 0 or word.find(";") >= 0:
-            #         continue
-
         if closing_idx >= 0:
             self._read_mode = False
+
+        if len(words) > 1 or len(words) == 1 and not words[0]:
+            return words
+        return []
+
+    def parse_document(self) -> list[str] | None:
+        words = []
+
+        while True:
+            line = self._file.readline()
+            if line == '':
+                return None
+
+            opening_idx: int = line.find(WikiParser.OPENING_CONTENT_TAG)
+            closing_idx: int = line.find(WikiParser.CLOSING_CONTENT_TAG)
+
+            if opening_idx >= 0 or self._read_mode:
+                self._read_mode = True
+
+                # if opening_idx < 0 and closing_idx < 0:
+                i, j = 0, len(line)
+                if opening_idx >= 0 and closing_idx >= 0:
+                    i, j = line.find(">", opening_idx), closing_idx
+                elif opening_idx >= 0 and closing_idx < 0:
+                    i, j = line.find(">", opening_idx), len(line)
+                substr = line[i:j]
+
+                
+                ws = substr.replace(", ", " ").replace(". ", " ").lower().split()
+                words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
+
+            if closing_idx >= 0:
+                self._read_mode = False
+                return words
 
         if len(words) > 1 or len(words) == 1 and not words[0]:
             return words
