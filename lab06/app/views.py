@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from .wiki_parser import WikiParser
 from copy import copy
-from scipy.sparse import bsr_array
+from scipy.sparse import coo_matrix
 import math
 import numpy as np
 
@@ -66,11 +66,13 @@ def init(request):
 
                 n += 1
 
-    A = bsr_array((values, (row, col)), shape=(m, n))
+    A = coo_matrix((values, (row, col)), shape=(m, n))
     IDF = np.empty(m)
     for i in range(m):
         IDF[i] = idf(i)
-    for i, j in zip(A.row, A.col):
+    indicies = zip(A.row, A.col)
+    A = A.tocsr()
+    for i, j in indicies:
         A[i, j] *= IDF[i]
 
     return HttpResponse(f"{m}, {n}")
