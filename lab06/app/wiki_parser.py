@@ -1,5 +1,6 @@
 from io import TextIOWrapper
 from functools import reduce
+import re
 
 class WikiParser:
     ARTICLE_NAME = "page"
@@ -35,8 +36,21 @@ class WikiParser:
             substr = line[i:j]
 
             
-            words = substr.replace(", ", " ").replace(". ", " ").lower().split()
-            words = list(filter(lambda x: x.isalnum() and not x.isdigit(), words))
+            words = substr \
+                    .replace(", ", " ") \
+                    .replace(". ", " ") \
+                    .replace("|", " ") \
+                    .replace("{{clear}}", "") \
+                    .replace("[[", "") \
+                    .replace("]]", "") \
+                    .replace("{{", "") \
+                    .replace("}}", "") \
+                    .replace("'''", "") \
+                    .replace("==", "") \
+                    .replace("===", "") \
+                    .lower() \
+                    .split()
+            words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
 
         if closing_idx >= 0:
             self._read_mode = False
@@ -68,8 +82,20 @@ class WikiParser:
                     i, j = line.find(">", opening_idx), len(line)
                 substr = line[i:j]
 
-                
-                ws = substr.replace(", ", " ").replace(". ", " ").lower().split()
+                ws = substr \
+                    .replace(", ", " ") \
+                    .replace(". ", " ") \
+                    .replace("|", " ") \
+                    .replace("{{clear}}", "") \
+                    .replace("[[", "") \
+                    .replace("]]", "") \
+                    .replace("{{", "") \
+                    .replace("}}", "") \
+                    .replace("'''", "") \
+                    .replace("==", "") \
+                    .replace("===", "") \
+                    .lower() \
+                    .split()
                 words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
 
             if closing_idx >= 0:
@@ -77,3 +103,48 @@ class WikiParser:
                 return words
 
         return None
+
+    def get_document(self) -> str | None:
+        doc = ""
+
+        while True:
+            line = self._file.readline()
+            if line == '':
+                self._file.close()
+                return None
+
+            opening_idx: int = line.find(WikiParser.OPENING_ARTICLE_TAG)
+            closing_idx: int = line.find(WikiParser.CLOSING_ARTICLE_TAG)
+
+            if opening_idx >= 0 or self._read_mode:
+                self._read_mode = True
+
+                # if opening_idx < 0 and closing_idx < 0:
+                i, j = 0, len(line)
+                if opening_idx >= 0:
+                    i = opening_idx
+                if closing_idx >= 0:
+                    j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
+
+                # if opening_idx >= 0 and closing_idx >= 0:
+                #     i, j = opening_idx, closing_idx + len(WikiParser.OPENING_ARTICLE_TAG)
+                # elif opening_idx >= 0 and closing_idx < 0:
+                #     i, j = opening_idx, len(line)
+                # elif opening_idx < 0 and closing_idx >= 0:
+                #     i, j = 0, closing_idx + len(WikiParser.OPENING_ARTICLE_TAG)
+                substr = line[i:j]
+                doc += substr
+
+            if closing_idx >= 0:
+                self._read_mode = False
+                return doc
+
+        return None
+
+    def count(self):
+        res = 0
+        for line in self._file:
+            if WikiParser.OPENING_ARTICLE_TAG in line:
+                res += 1
+
+        return res
