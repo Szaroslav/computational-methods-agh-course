@@ -3,6 +3,10 @@ from django.http import HttpResponse
 from .wiki_parser import WikiParser
 from copy import copy
 from scipy.sparse import coo_matrix
+from mediawiki_dump.tokenizer import clean, tokenize
+import nltk
+from nltk.corpus import wordnet
+from nltk.stem import *
 import math
 import numpy as np
 
@@ -104,24 +108,46 @@ def init(request):
     words_dict: dict[str, int] = {}
     words_base: list[str] = []
 
+    # nltk.download('wordnet')
+    # nltk.download('punkt')
+    # nltk.download('averaged_perceptron_tagger')
+    # lemmatizer = WordNetLemmatizer()
+    stemmer = PorterStemmer()
+
     def idf(i: int):
         return np.log10(n / A.getrow(i).getnnz(1))
+
+    def get_poses(words: list[str]):
+        tag_dict = {
+            "J": wordnet.ADJ,
+            "N": wordnet.NOUN,
+            "V": wordnet.VERB,
+            "R": wordnet.ADV
+        }
+        tags = nltk.pos_tag(words)
+
+        return [tag_dict.get(tag[1][0].upper(), wordnet.NOUN) for tag in tags]
 
     #
     # Init dictionary of words occurred at least once in all documents
     #
+    print("Initializing dictionary of words...")
     for filename in filenames:
         with open(f"{WIKIS_FILE_PATH}{filename}", "r") as file:
             parser = WikiParser(file)
 
-            while (words := parser.parse_line()) is not None:            
+            while (doc := parser.parse_document()) is not None:   
+                words = tokenize(clean(doc).lower())
                 for word in words:
+                    word = stemmer.stem(word)
                     if words_dict.get(word) is None:
                         words_dict[word] = 0
-
+                pass
+    
     #
-    # Remove stop words from the bag
+    # Remove stop words from the dictionary
     #
+    print("Removing stop words from the dictionary...")
     for word in STOP_WORDS:
         if words_dict.get(word) is not None:
             words_dict.pop(word)
@@ -135,28 +161,33 @@ def init(request):
     m = len(words_dict)
 
     #
-    # Iterate document-wise over files
+    # Iterate over every document available in the dumps
     #
+    print("Iterating over every document available in the dumps...")
     row, col, values = [], [], []
     for filename in filenames:
         with open(f"{WIKIS_FILE_PATH}{filename}", "r") as file:
             parser = WikiParser(file)
 
-            while (words := parser.parse_document()) is not None:
+            while (doc := parser.parse_document()) is not None:
                 di = {}
+                words = tokenize(clean(doc).lower())
+                # poses = get_poses(words)
 
                 for word in words:
+                    word = stemmer.stem(word)
                     if di.get(word) is None:
                         di[word] = 0
                     di[word] += 1
                 
-                for key in di:
-                    if di.get(key) > 0:
-                        row.append(words_dict[key])
-                        col.append(n)
-                        values.append(di.get(key))
+                # for key in di:
+                #     if di.get(key) > 0 and words_dict.get(key) is not None:
+                #         row.append(words_dict[key])
+                #         col.append(n)
+                #         values.append(di.get(key))
 
                 n += 1
+                print(n)
 
     # A = coo_matrix((values, (row, col)), shape=(m, n))
     # IDF = np.empty(m)

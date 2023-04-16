@@ -59,8 +59,8 @@ class WikiParser:
             return words
         return []
 
-    def parse_document(self) -> list[str] | None:
-        words = []
+    def parse_document(self) -> str | None:
+        doc = ""
 
         while True:
             line = self._file.readline()
@@ -77,30 +77,31 @@ class WikiParser:
                 # if opening_idx < 0 and closing_idx < 0:
                 i, j = 0, len(line)
                 if opening_idx >= 0:
-                    i = opening_idx
+                    i = line.find(">", opening_idx) + 1
                 if closing_idx >= 0:
-                    j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
+                    j = closing_idx + len(WikiParser.CLOSING_CONTENT_TAG)
                 substr = line[i:j]
 
-                ws = substr \
-                    .replace(", ", " ") \
-                    .replace(". ", " ") \
-                    .replace("|", " ") \
-                    .replace("{{clear}}", "") \
-                    .replace("[[", "") \
-                    .replace("]]", "") \
-                    .replace("{{", "") \
-                    .replace("}}", "") \
-                    .replace("'''", "") \
-                    .replace("==", "") \
-                    .replace("===", "") \
-                    .lower() \
-                    .split()
-                # words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
+                # ws = substr \
+                #     .replace(", ", " ") \
+                #     .replace(". ", " ") \
+                #     .replace("|", " ") \
+                #     .replace("{{clear}}", "") \
+                #     .replace("[[", "") \
+                #     .replace("]]", "") \
+                #     .replace("{{", "") \
+                #     .replace("}}", "") \
+                #     .replace("'''", "") \
+                #     .replace("==", "") \
+                #     .replace("===", "") \
+                #     .lower() \
+                #     .split()
+
+                doc += substr
 
             if closing_idx >= 0:
                 self._read_mode = False
-                return words
+                return doc
 
         return None
 
