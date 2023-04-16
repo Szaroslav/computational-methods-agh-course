@@ -29,10 +29,10 @@ class WikiParser:
 
             # if opening_idx < 0 and closing_idx < 0:
             i, j = 0, len(line)
-            if opening_idx >= 0 and closing_idx >= 0:
-                i, j = line.find(">", opening_idx), closing_idx
-            elif opening_idx >= 0 and closing_idx < 0:
-                i, j = line.find(">", opening_idx), len(line)
+            if opening_idx >= 0:
+                i = opening_idx
+            if closing_idx >= 0:
+                j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
             substr = line[i:j]
 
             
@@ -50,7 +50,7 @@ class WikiParser:
                     .replace("===", "") \
                     .lower() \
                     .split()
-            words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
+            # words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
 
         if closing_idx >= 0:
             self._read_mode = False
@@ -76,10 +76,10 @@ class WikiParser:
 
                 # if opening_idx < 0 and closing_idx < 0:
                 i, j = 0, len(line)
-                if opening_idx >= 0 and closing_idx >= 0:
-                    i, j = line.find(">", opening_idx), closing_idx
-                elif opening_idx >= 0 and closing_idx < 0:
-                    i, j = line.find(">", opening_idx), len(line)
+                if opening_idx >= 0:
+                    i = opening_idx
+                if closing_idx >= 0:
+                    j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
                 substr = line[i:j]
 
                 ws = substr \
@@ -96,7 +96,7 @@ class WikiParser:
                     .replace("===", "") \
                     .lower() \
                     .split()
-                words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
+                # words += list(filter(lambda x: x.isalnum() and not x.isdigit(), ws))
 
             if closing_idx >= 0:
                 self._read_mode = False
@@ -125,6 +125,7 @@ class WikiParser:
                     i = opening_idx
                 if closing_idx >= 0:
                     j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
+                substr = line[i:j]
 
                 # if opening_idx >= 0 and closing_idx >= 0:
                 #     i, j = opening_idx, closing_idx + len(WikiParser.OPENING_ARTICLE_TAG)
@@ -132,7 +133,7 @@ class WikiParser:
                 #     i, j = opening_idx, len(line)
                 # elif opening_idx < 0 and closing_idx >= 0:
                 #     i, j = 0, closing_idx + len(WikiParser.OPENING_ARTICLE_TAG)
-                substr = line[i:j]
+                
                 doc += substr
 
             if closing_idx >= 0:

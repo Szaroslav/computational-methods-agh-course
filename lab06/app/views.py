@@ -7,22 +7,101 @@ import math
 import numpy as np
 
 
+STOP_WORDS = [
+    "a",
+    "about",
+    "actually",
+    "almost",
+    "also",
+    "although",
+    "always",
+    "am",
+    "an",
+    "and",
+    "any",
+    "are",
+    "as",
+    "at",
+    "be",
+    "became",
+    "become",
+    "but",
+    "by",
+    "can",
+    "could",
+    "did",
+    "do",
+    "does",
+    "each",
+    "either",
+    "else",
+    "for",
+    "from",
+    "had",
+    "has",
+    "have",
+    "hence",
+    "how",
+    "i",
+    "if",
+    "in",
+    "is",
+    "it",
+    "its",
+    "just",
+    "may",
+    "maybe",
+    "me",
+    "might",
+    "mine",
+    "must",
+    "my",
+    "mine",
+    "must",
+    "my",
+    "neither",
+    "nor",
+    "not",
+    "of",
+    "oh",
+    "ok",
+    "when",
+    "where",
+    "whereas",
+    "wherever",
+    "whenever",
+    "whether",
+    "which",
+    "while",
+    "who",
+    "whom",
+    "whoever",
+    "whose",
+    "why",
+    "will",
+    "with",
+    "within",
+    "without",
+    "would",
+    "yes",
+    "yet",
+    "you",
+    "your"
+]
+
+
 def init(request):
-    WIKI_FILE_PATH = "/home/szary/Downloads/wiki/"
+    WIKIS_FILE_PATH = "/home/szary/Studia/4s/mownit/computation-methods-agh-course/lab06/db/"
     CONTENT_TAG_NAME = "text"
     OPENING_TAG, CLOSING_TAG = f"<{CONTENT_TAG_NAME}", f"</{CONTENT_TAG_NAME}>"
     filenames: list[str] = [
-        "simplewiki.xml",
-        # "simplewiki-20230401-pages-articles-multistream.xml",
-        # "enwiki-20230401-pages-articles-multistream1.xml,
-        # "enwiki-20230401-pages-articles-multistream2.xml",
-        # "enwiki-20230401-pages-articles-multistream3.xml"
+        "chesswiki.test.xml"
     ]
     count: int = 0
     n: int = 0
     m: int = 0
     mx, mn = (0, ""), (math.inf, "")
-    bag_of_words: dict[str, int] = {}
+    words_dict: dict[str, int] = {}
     words_base: list[str] = []
 
     def idf(i: int):
@@ -32,53 +111,66 @@ def init(request):
     # Init dictionary of words occurred at least once in all documents
     #
     for filename in filenames:
-        with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
+        with open(f"{WIKIS_FILE_PATH}{filename}", "r") as file:
             parser = WikiParser(file)
 
             while (words := parser.parse_line()) is not None:            
                 for word in words:
-                    if bag_of_words.get(word) is None:
-                        bag_of_words[word] = 0
+                    if words_dict.get(word) is None:
+                        words_dict[word] = 0
 
-    words_base = copy(list(bag_of_words.keys()))
-    m = len(words_base)
+    #
+    # Remove stop words from the bag
+    #
+    for word in STOP_WORDS:
+        if words_dict.get(word) is not None:
+            words_dict.pop(word)
+
+    #
+    # Set every key of the words dictionary index
+    #
+    for i, key in enumerate(words_dict):
+        words_dict[key] = i
+
+    m = len(words_dict)
 
     #
     # Iterate document-wise over files
     #
     row, col, values = [], [], []
     for filename in filenames:
-        with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
+        with open(f"{WIKIS_FILE_PATH}{filename}", "r") as file:
             parser = WikiParser(file)
 
-            while (words := parser.parse_document()) is not None:    
-                di = copy(bag_of_words)
+            while (words := parser.parse_document()) is not None:
+                di = {}
 
                 for word in words:
-                    if di.get(word) is not None:
-                        di[word] += 1
+                    if di.get(word) is None:
+                        di[word] = 0
+                    di[word] += 1
                 
-                for i, key in enumerate(di):
+                for key in di:
                     if di.get(key) > 0:
-                        row.append(i)
+                        row.append(words_dict[key])
                         col.append(n)
                         values.append(di.get(key))
 
                 n += 1
 
-    A = coo_matrix((values, (row, col)), shape=(m, n))
-    IDF = np.empty(m)
-    for i in range(m):
-        IDF[i] = idf(i)
-    indicies = zip(A.row, A.col)
-    A = A.tocsr()
-    for i, j in indicies:
-        A[i, j] *= IDF[i]
+    # A = coo_matrix((values, (row, col)), shape=(m, n))
+    # IDF = np.empty(m)
+    # for i in range(m):
+    #     IDF[i] = idf(i)
+    # indicies = zip(A.row, A.col)
+    # A = A.tocsr()
+    # for i, j in indicies:
+    #     A[i, j] *= IDF[i]
 
     return HttpResponse(f"{m}, {n}")
 
 def create_file(request):
-    WIKIS_FILE_PATH = "/run/media/szary/SanDisk/"
+    WIKIS_FILE_PATH = "/home/szary/Studia/4s/mownit/computation-methods-agh-course/lab06/db/"
 
     filenames: list[str] = [
         # "enwiki-20230401-pages-articles-multistream1.xml",
@@ -117,57 +209,55 @@ def create_file(request):
         # "enwiki-20230401-pages-articles-multistream20.1.xml",
         # "enwiki-20230401-pages-articles-multistream20.2.xml",
         # "enwiki-20230401-pages-articles-multistream20.3.xml",
-        "enwiki-20230401-pages-articles-multistream21.1.xml",
-        "enwiki-20230401-pages-articles-multistream21.2.xml",
-        "enwiki-20230401-pages-articles-multistream21.3.xml",
-        "enwiki-20230401-pages-articles-multistream22.1.xml",
-        "enwiki-20230401-pages-articles-multistream22.2.xml",
-        "enwiki-20230401-pages-articles-multistream22.3.xml",
-        "enwiki-20230401-pages-articles-multistream22.4.xml",
-        "enwiki-20230401-pages-articles-multistream23.1.xml",
-        "enwiki-20230401-pages-articles-multistream23.2.xml",
-        "enwiki-20230401-pages-articles-multistream23.3.xml",
-        "enwiki-20230401-pages-articles-multistream23.4.xml",
-        "enwiki-20230401-pages-articles-multistream24.1.xml",
-        "enwiki-20230401-pages-articles-multistream24.2.xml",
-        "enwiki-20230401-pages-articles-multistream24.3.xml",
-        "enwiki-20230401-pages-articles-multistream24.4.xml",
-        "enwiki-20230401-pages-articles-multistream24.5.xml",
-        "enwiki-20230401-pages-articles-multistream25.1.xml",
-        "enwiki-20230401-pages-articles-multistream25.2.xml",
-        "enwiki-20230401-pages-articles-multistream25.3.xml",
-        "enwiki-20230401-pages-articles-multistream25.4.xml",
-        "enwiki-20230401-pages-articles-multistream26.1.xml",
-        "enwiki-20230401-pages-articles-multistream27.1.xml",
-        "enwiki-20230401-pages-articles-multistream27.2.xml",
-        "enwiki-20230401-pages-articles-multistream27.3.xml",
-        "enwiki-20230401-pages-articles-multistream27.4.xml",
-        "enwiki-20230401-pages-articles-multistream27.5.xml",
-        "enwiki-20230401-pages-articles-multistream27.6.xml",
-        "enwiki-20230401-pages-articles-multistream27.7.xml"
+        # "enwiki-20230401-pages-articles-multistream21.1.xml",
+        # "enwiki-20230401-pages-articles-multistream21.2.xml",
+        # "enwiki-20230401-pages-articles-multistream21.3.xml",
+        # "enwiki-20230401-pages-articles-multistream22.1.xml",
+        # "enwiki-20230401-pages-articles-multistream22.2.xml",
+        # "enwiki-20230401-pages-articles-multistream22.3.xml",
+        # "enwiki-20230401-pages-articles-multistream22.4.xml",
+        # "enwiki-20230401-pages-articles-multistream23.1.xml",
+        # "enwiki-20230401-pages-articles-multistream23.2.xml",
+        # "enwiki-20230401-pages-articles-multistream23.3.xml",
+        # "enwiki-20230401-pages-articles-multistream23.4.xml",
+        # "enwiki-20230401-pages-articles-multistream24.1.xml",
+        # "enwiki-20230401-pages-articles-multistream24.2.xml",
+        # "enwiki-20230401-pages-articles-multistream24.3.xml",
+        # "enwiki-20230401-pages-articles-multistream24.4.xml",
+        # "enwiki-20230401-pages-articles-multistream24.5.xml",
+        # "enwiki-20230401-pages-articles-multistream25.1.xml",
+        # "enwiki-20230401-pages-articles-multistream25.2.xml",
+        # "enwiki-20230401-pages-articles-multistream25.3.xml",
+        # "enwiki-20230401-pages-articles-multistream25.4.xml",
+        # "enwiki-20230401-pages-articles-multistream26.1.xml",
+        # "enwiki-20230401-pages-articles-multistream27.1.xml",
+        # "enwiki-20230401-pages-articles-multistream27.2.xml",
+        # "enwiki-20230401-pages-articles-multistream27.3.xml",
+        # "enwiki-20230401-pages-articles-multistream27.4.xml",
+        # "enwiki-20230401-pages-articles-multistream27.5.xml",
+        # "enwiki-20230401-pages-articles-multistream27.6.xml",
+        # "enwiki-20230401-pages-articles-multistream27.7.xml"
     ]
 
+    with open(f"{WIKIS_FILE_PATH}chesswiki.xml", "r") as file:
+        with open(f"{WIKIS_FILE_PATH}chesswiki.test.xml", "w") as file0:
+            for i, line in enumerate(file):
+                if i == 500000:
+                    break
+
+                file0.write(line)
+
     # for filename in filenames:
-    #     with open(f"{WIKI_FILE_PATH}{filename}", "r") as file:
-    #         with open(f"{WIKI_FILE_PATH}simplewiki.xml", "w") as file0:
-    #             for i, line in enumerate(file):
-    #                 if i == 200000:
-    #                     break
+    #     with open(f"{WIKIS_FILE_PATH}{filename}", "r") as file:
+    #         with open(f"/home/szary/Studia/4s/mownit/computation-methods-agh-course/lab06/db/chesswiki.xml", "a") as file0:
+    #             parser = WikiParser(file)
 
-    #                 file0.write(line)
-    c = 0
-    for filename in filenames:
-        with open(f"{WIKIS_FILE_PATH}{filename}", "r") as file:
-            with open(f"/home/szary/Studia/4s/mownit/computation-methods-agh-course/lab06/db/chesswiki.xml", "a") as file0:
-                parser = WikiParser(file)
+    #             while (document := parser.get_document()) is not None:
+    #                 pass
+    #                 if "chess" in document:
+    #                     file0.write(document)
 
-                while (document := parser.get_document()) is not None:
-                    pass
-                    if "chess" in document:
-                        c += 1
-                        file0.write(document)
-
-    return HttpResponse(c)
+    return HttpResponse()
 
 def count(request):
     c = 0
