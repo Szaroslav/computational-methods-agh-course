@@ -1,0 +1,5 @@
+# Wikipedia XML dumps
+db/
+
+# Wikipedia XML dumps (not compressed)
+# db/*.xml
