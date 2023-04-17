@@ -1,4 +1,3 @@
-import wiki_parser as wp
 import redis
 from copy import copy
 from scipy.sparse import coo_matrix
@@ -9,6 +8,12 @@ from nltk.stem import *
 import math
 import json
 import numpy as np
+from io import TextIOWrapper
+
+if __name__ == "__main__":
+    import wiki_parser as wp
+else:
+    import db.wiki_parser as wp
 
 
 connection = redis.Redis(host="localhost", port=6379, decode_responses=True)
@@ -102,6 +107,16 @@ STOP_WORDS = [
 stemmer = PorterStemmer()
 
 
+def words_dict(words: list[str]) -> dict[int]:
+    words_dict: dict[int] = {}
+
+    for word in words:
+        word = stemmer.stem(word)
+        if words_dict.get(word) is None:
+            words_dict[word] = 0
+    
+    return words_dict
+
 def frequency_vector(words: list[str]) -> dict[int]:
     frequency_vector: dict[int] = {}
 
@@ -112,7 +127,6 @@ def frequency_vector(words: list[str]) -> dict[int]:
         frequency_vector[word] += 1
     
     return frequency_vector
-
 
 def sparse_matrix(vector: dict[int], words_dict: dict[int], j: int) -> tuple[list[int], list[int], list[float]]:
     sparse_matrix: tuple[list[int], list[int], list[float]] = ([], [], [])
@@ -125,7 +139,6 @@ def sparse_matrix(vector: dict[int], words_dict: dict[int], j: int) -> tuple[lis
             values.append(vector.get(key))
 
     return sparse_matrix
-
 
 def document_frequency(vector: dict[int], words_dict: dict[int]) -> np.ndarray:
     doc_frequency = np.zeros(len(words_dict))
@@ -147,7 +160,7 @@ def init():
     n: int = 0
     m: int = 0
     mx, mn = (0, ""), (math.inf, "")
-    words_dict: dict[str, int] = {}
+    wd: dict[str, int] = {}
 
     # for word in tokenize("chess is an abstract board game. playing chess is really fun. king is a chess piece"):
     #     print(stemmer.stem(word))
@@ -176,27 +189,23 @@ def init():
 
             while (doc := parser.parse_document()) is not None:   
                 words = tokenize(clean(doc).lower())
-                for word in words:
-                    word = stemmer.stem(word)
-                    if words_dict.get(word) is None:
-                        words_dict[word] = 0
-                pass
+                wd.update(words_dict(words))
     
     #
     # Remove stop words from the dictionary
     #
     print("Removing stop words from the dictionary...")
     for word in STOP_WORDS:
-        if words_dict.get(word) is not None:
-            words_dict.pop(word)
+        if wd.get(word) is not None:
+            wd.pop(word)
 
     #
     # Set every key of the words dictionary index
     #
-    for i, key in enumerate(words_dict):
-        words_dict[key] = i
+    for i, key in enumerate(wd):
+        wd[key] = i
 
-    m = len(words_dict)
+    m = len(wd)
 
     #
     # Iterate over every document available in the dumps
@@ -211,8 +220,8 @@ def init():
             while (doc := parser.parse_document()) is not None:
                 words = tokenize(clean(doc).lower())
                 di = frequency_vector(words)
-                rows, cols, values = sparse_matrix(di, words_dict, n)
-                doc_f = document_frequency(di, words_dict)
+                rows, cols, values = sparse_matrix(di, wd, n)
+                doc_f = document_frequency(di, wd)
 
                 n += 1
                 # print(n)
@@ -226,12 +235,12 @@ def init():
     # for i, j in indicies:
     #     A[i, j] *= IDF[i]
 
-    IDF = np.empty(m)
-    for i in range(m):
-        IDF[i] = idf(i)
+    # IDF = np.empty(m)
+    # for i in range(m):
+    #     IDF[i] = idf(i)
 
-    for k, i in enumerate(rows):
-        values[k] *= IDF[i]
+    # for k, i in enumerate(rows):
+    #     values[k] *= IDF[i]
 
     print(len(rows))
 
@@ -241,4 +250,5 @@ def init():
     print(f"{m}, {n}")
 
 
-init()
+if __name__ == "__main__":
+    init()
