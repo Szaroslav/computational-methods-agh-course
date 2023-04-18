@@ -212,7 +212,7 @@ def init():
     #
     print("Iterating over every document available in the dumps...")
     rows, cols, values = [], [], []
-    doc_f = None
+    doc_f = np.zeros(len(wd))
     for filename in filenames:
         with open(filename, "r") as file:
             parser = wp.WikiParser(file)
@@ -220,8 +220,12 @@ def init():
             while (doc := parser.parse_document()) is not None:
                 words = tokenize(clean(doc).lower())
                 di = frequency_vector(words)
-                rows, cols, values = sparse_matrix(di, wd, n)
-                doc_f = document_frequency(di, wd)
+                doc_f += document_frequency(di, wd)
+
+                r, c, v = sparse_matrix(di, wd, n)
+                rows += r
+                cols += c
+                values += v
 
                 n += 1
                 # print(n)
