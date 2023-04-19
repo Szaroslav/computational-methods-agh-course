@@ -1,26 +1,47 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from copy import copy
+import json
 from mediawiki_dump.tokenizer import tokenize
 import math
 import numpy as np
 from django.core.cache import cache
 import db.init
+import db.storage as storage
 
 import nltk
 nltk.download('punkt')
 
 
 def search(request):
-    query = request.GET.get("q", "")
-    k = int(request.GET.get("k", "0"))
-    query = np.array(tokenize(query))
-    print(query, k)
     if cache.get("sparse_matrix") is None:
         db.init.load()
+
+    q = np.array(tokenize(request.GET.get("q", "")))
+    query = {}
+    for word in q:
+        if storage.bow.get(word) is not None:
+            query[storage.bow.get(word)] = word
+    query_norm = len(query)
+
+    k = int(request.GET.get("k", "0"))
+    # print(query, k)
+
+    #
+    # Evaluate document frequencies (q^T d_j) including query vector
+    #
+    ds = np.zeros(storage.sparse_matrix_dims[1])
+    for el in storage.sparse_matrix:
+        if query.get(el["row"]) is not None:
+            ds[el["col"]] += el["value"]
+
+    magnitudes = np.array([d / query_norm for d in ds])
+    M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
+    print(np.sort(M, axis=-1)[:k])
+    print(np.sort(M, axis=0)[::-1][:k])
     # print(cache.get("sparse_matrix"))
 
-    return HttpResponse(query)
+    return HttpResponse(json.dumps(query))
 
 def count(request):
     # c = 0

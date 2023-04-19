@@ -22,6 +22,9 @@ else:
 
 
 CURRENT_PATH = os.path.dirname(__file__)
+filenames: list[str] = [
+    "chesswiki.test.xml"
+]
 STOP_WORDS = [
     "a",
     "about",
@@ -111,8 +114,8 @@ STOP_WORDS = [
 stemmer = PorterStemmer()
 
 
-def words_dict(words: list[str]) -> dict[int]:
-    words_dict: dict[int] = {}
+def words_dict(words: list[str]) -> dict[str, int]:
+    words_dict: dict[str, int] = {}
 
     for word in words:
         word = stemmer.stem(word)
@@ -121,8 +124,8 @@ def words_dict(words: list[str]) -> dict[int]:
     
     return words_dict
 
-def frequency_vector(words: list[str]) -> dict[int]:
-    frequency_vector: dict[int] = {}
+def frequency_vector(words: list[str]) -> dict[str, int]:
+    frequency_vector: dict[str, int] = {}
 
     for word in words:
         word = stemmer.stem(word)
@@ -132,7 +135,7 @@ def frequency_vector(words: list[str]) -> dict[int]:
     
     return frequency_vector
 
-def sparse_matrix(vector: dict[int], words_dict: dict[int], j: int) -> tuple[list[int], list[int], list[float]]:
+def sparse_matrix(vector: dict[str, int], words_dict: dict[str, int], j: int) -> tuple[list[int], list[int], list[float]]:
     sparse_matrix: tuple[list[int], list[int], list[float]] = ([], [], [])
     rows, cols, values = sparse_matrix
 
@@ -144,7 +147,7 @@ def sparse_matrix(vector: dict[int], words_dict: dict[int], j: int) -> tuple[lis
 
     return sparse_matrix
 
-def document_frequency(vector: dict[int], words_dict: dict[int]) -> np.ndarray:
+def document_frequency(vector: dict[str, int], words_dict: dict[str, int]) -> np.ndarray:
     doc_frequency = np.zeros(len(words_dict))
 
     for key in vector:
@@ -153,25 +156,20 @@ def document_frequency(vector: dict[int], words_dict: dict[int]) -> np.ndarray:
 
     return doc_frequency
 
+def remove_stop_words(wd: dict[str, int]) -> dict[str, int]:
+    print("Removing stop words from the dictionary...")
+    for word in STOP_WORDS:
+        if wd.get(word) is not None:
+            wd.pop(word)
 
-def create():
-    filenames: list[str] = [
-        "chesswiki.test.xml"
-    ]
-    n: int = 0
-    m: int = 0
-    # mx, mn = (0, ""), (math.inf, "")
-    wd: dict[str, int] = {}
+    return wd
 
-    # for word in tokenize("chess is an abstract board game. playing chess is really fun. king is a chess piece"):
-    #     print(stemmer.stem(word))
-
-    def idf(i: int):
-        return np.log10(n / doc_f[i])
-
+def bag_of_words() -> dict[str, int]:
     #
     # Init dictionary of words occurred at least once in all documents
     #
+    wd: dict[str, int] = {}
+
     print("Initializing dictionary of words...")
     for filename in filenames:
         with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
@@ -184,10 +182,7 @@ def create():
     #
     # Remove stop words from the dictionary
     #
-    print("Removing stop words from the dictionary...")
-    for word in STOP_WORDS:
-        if wd.get(word) is not None:
-            wd.pop(word)
+    wd = remove_stop_words(wd)
 
     #
     # Set every key of the words dictionary index
@@ -195,6 +190,21 @@ def create():
     for i, key in enumerate(wd):
         wd[key] = i
 
+    return wd
+
+
+def create():
+    n: int = 0
+    m: int = 0
+    # mx, mn = (0, ""), (math.inf, "") 
+
+    # for word in tokenize("chess is an abstract board game. playing chess is really fun. king is a chess piece"):
+    #     print(stemmer.stem(word))
+
+    def idf(i: int):
+        return np.log10(n / doc_f[i])
+
+    wd = bag_of_words()
     m = len(wd)
 
     #
@@ -211,7 +221,7 @@ def create():
                 words = tokenize(clean(doc).lower())
                 di = frequency_vector(words)
                 doc_f += document_frequency(di, wd)
-                norm_di = reduce(lambda acc, x: acc + x, [f for f in di.values()], 0)
+                norm_di = reduce(lambda acc, x: acc + x**2, [f for f in di.values()], 0)**.5
                 di = { key: value / norm_di for key, value in di.items() }
 
                 r, c, v = sparse_matrix(di, wd, n)
@@ -254,13 +264,19 @@ def create():
 def load():
     with open(f"{CURRENT_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
         data = json_stream.load(file, persistent=True)
+
+        storage.sparse_matrix_dims = (data["dimensions"]["m"], data["dimensions"]["n"])
+        cache.set("sparse_matrix_dims", storage.sparse_matrix_dims)
+
         storage.sparse_matrix = np.empty(data["dimensions"]["sparse_length"], dtype=storage.dt)
         for i, el in enumerate(data["data"]):
             storage.sparse_matrix[i]["row"]     = el["row"]
             storage.sparse_matrix[i]["col"]     = el["col"]
             storage.sparse_matrix[i]["value"]   = el["value"]
         cache.set("sparse_matrix", storage.sparse_matrix)
-        # print(storage.sparse_matrix)
+
+        storage.bow = bag_of_words()
+        cache.set("bag_of_words", storage.bow)
 
 
 if __name__ == "__main__":
