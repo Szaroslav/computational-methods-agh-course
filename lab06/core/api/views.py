@@ -11,7 +11,8 @@ nltk.download('punkt')
 
 def search(request):
     query = request.GET.get("q", "")
-    print(tokenize(query))
+    k = int(request.GET.get("k", "0"))
+    print(tokenize(query), k)
 
     return HttpResponse(query)
 

@@ -8,6 +8,8 @@ from nltk.stem import *
 import math
 import json
 import numpy as np
+import json_stream
+import storage
 from io import TextIOWrapper
 
 if __name__ == "__main__":
@@ -150,13 +152,10 @@ def document_frequency(vector: dict[int], words_dict: dict[int]) -> np.ndarray:
     return doc_frequency
 
 
-def init():
-    CONTENT_TAG_NAME = "text"
-    OPENING_TAG, CLOSING_TAG = f"<{CONTENT_TAG_NAME}", f"</{CONTENT_TAG_NAME}>"
+def create():
     filenames: list[str] = [
         "chesswiki.test.xml"
     ]
-    count: int = 0
     n: int = 0
     m: int = 0
     mx, mn = (0, ""), (math.inf, "")
@@ -168,23 +167,12 @@ def init():
     def idf(i: int):
         return np.log10(n / doc_f[i])
 
-    def get_poses(words: list[str]):
-        tag_dict = {
-            "J": wordnet.ADJ,
-            "N": wordnet.NOUN,
-            "V": wordnet.VERB,
-            "R": wordnet.ADV
-        }
-        tags = nltk.pos_tag(words)
-
-        return [tag_dict.get(tag[1][0].upper(), wordnet.NOUN) for tag in tags]
-
     #
     # Init dictionary of words occurred at least once in all documents
     #
     print("Initializing dictionary of words...")
     for filename in filenames:
-        with open(filename, "r") as file:
+        with open(filename, "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
             while (doc := parser.parse_document()) is not None:   
@@ -214,7 +202,7 @@ def init():
     rows, cols, values = [], [], []
     doc_f = np.zeros(len(wd))
     for filename in filenames:
-        with open(filename, "r") as file:
+        with open(filename, "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
             while (doc := parser.parse_document()) is not None:
@@ -248,11 +236,25 @@ def init():
 
     print(len(rows))
 
-    with open("dt-sparse.json", "w") as file:
-        file.write(json.dumps([{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)], indent=4))
+    with open("dt-sparse.min.json", "w") as file:
+        data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
+        file.write(json.dumps({
+            "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
+            "data": data
+        }))
 
     print(f"{m}, {n}")
 
+def load():
+    with open("dt-sparse.min.json", "r", encoding="utf8") as file:
+        data = json_stream.load(file)
+        storage.sparse_matrix = np.empty(data["dimensions"]["sparse_length"], dtype=storage.dt)
+        for i, el in enumerate(data["data"].persistent()):
+            storage.sparse_matrix[i]["row"] =  el["row"]
+            storage.sparse_matrix[i]["col"] =  el["col"]
+            storage.sparse_matrix[i]["value"] =  el["value"]
+
 
 if __name__ == "__main__":
-    init()
+    load()
+    # create()
