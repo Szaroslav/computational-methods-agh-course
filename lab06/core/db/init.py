@@ -1,4 +1,3 @@
-import redis
 import os
 from copy import copy
 from scipy.sparse import coo_matrix
@@ -10,17 +9,17 @@ import math
 import json
 import numpy as np
 import json_stream
-import db.storage as storage
 from io import TextIOWrapper
-from django.core.cache import cache
+from functools import reduce
+from django.core.cache import cache, caches
 
 if __name__ == "__main__":
+    import storage as storage
     import wiki_parser as wp
 else:
+    import db.storage as storage
     import db.wiki_parser as wp
 
-
-connection = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
 CURRENT_PATH = os.path.dirname(__file__)
 STOP_WORDS = [
@@ -161,7 +160,7 @@ def create():
     ]
     n: int = 0
     m: int = 0
-    mx, mn = (0, ""), (math.inf, "")
+    # mx, mn = (0, ""), (math.inf, "")
     wd: dict[str, int] = {}
 
     # for word in tokenize("chess is an abstract board game. playing chess is really fun. king is a chess piece"):
@@ -212,6 +211,8 @@ def create():
                 words = tokenize(clean(doc).lower())
                 di = frequency_vector(words)
                 doc_f += document_frequency(di, wd)
+                norm_di = reduce(lambda acc, x: acc + x, [f for f in di.values()], 0)
+                di = { key: value / norm_di for key, value in di.items() }
 
                 r, c, v = sparse_matrix(di, wd, n)
                 rows += r
@@ -230,17 +231,19 @@ def create():
     # for i, j in indicies:
     #     A[i, j] *= IDF[i]
 
-    # IDF = np.empty(m)
-    # for i in range(m):
-    #     IDF[i] = idf(i)
+    IDF = np.empty(m)
+    for i in range(m):
+        IDF[i] = idf(i)
 
-    # for k, i in enumerate(rows):
-    #     values[k] *= IDF[i]
+    for k, i in enumerate(rows):
+        values[k] *= IDF[i]
 
     print(len(rows))
 
     with open(f"{CURRENT_PATH}/dt-sparse.min.json", "w") as file:
         data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
+        storage.sparse_matrix = data
+        cache.set("sparse_matrix", data)
         file.write(json.dumps({
             "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
             "data": data
@@ -250,17 +253,16 @@ def create():
 
 def load():
     with open(f"{CURRENT_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
-        print()
-        data = json_stream.load(file)
+        data = json_stream.load(file, persistent=True)
         storage.sparse_matrix = np.empty(data["dimensions"]["sparse_length"], dtype=storage.dt)
-        for i, el in enumerate(data["data"].persistent()):
-            storage.sparse_matrix[i]["row"] =  el["row"]
-            storage.sparse_matrix[i]["col"] =  el["col"]
-            storage.sparse_matrix[i]["value"] =  el["value"]
+        for i, el in enumerate(data["data"]):
+            storage.sparse_matrix[i]["row"]     = el["row"]
+            storage.sparse_matrix[i]["col"]     = el["col"]
+            storage.sparse_matrix[i]["value"]   = el["value"]
         cache.set("sparse_matrix", storage.sparse_matrix)
         # print(storage.sparse_matrix)
 
 
 if __name__ == "__main__":
-    load()
-    # create()
+    # load()
+    create()

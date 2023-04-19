@@ -15,10 +15,10 @@ def search(request):
     query = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))
     query = np.array(tokenize(query))
-    # print(tokenize(query), k)
+    print(query, k)
     if cache.get("sparse_matrix") is None:
         db.init.load()
-    print(cache.get("sparse_matrix"))
+    # print(cache.get("sparse_matrix"))
 
     return HttpResponse(query)
 
