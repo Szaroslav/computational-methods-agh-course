@@ -14,6 +14,7 @@ nltk.download('punkt')
 def search(request):
     query = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))
+    query = np.array(tokenize(query))
     # print(tokenize(query), k)
     if cache.get("sparse_matrix") is None:
         db.init.load()
