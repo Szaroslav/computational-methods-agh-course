@@ -4,6 +4,8 @@ from copy import copy
 from mediawiki_dump.tokenizer import tokenize
 import math
 import numpy as np
+from django.core.cache import cache
+import db.init
 
 import nltk
 nltk.download('punkt')
@@ -12,7 +14,10 @@ nltk.download('punkt')
 def search(request):
     query = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))
-    print(tokenize(query), k)
+    # print(tokenize(query), k)
+    if cache.get("sparse_matrix") is None:
+        db.init.load()
+    print(cache.get("sparse_matrix"))
 
     return HttpResponse(query)
 

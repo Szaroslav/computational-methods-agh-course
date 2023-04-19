@@ -1,4 +1,5 @@
 import redis
+import os
 from copy import copy
 from scipy.sparse import coo_matrix
 from mediawiki_dump.tokenizer import clean, tokenize
@@ -9,8 +10,9 @@ import math
 import json
 import numpy as np
 import json_stream
-import storage
+import db.storage as storage
 from io import TextIOWrapper
+from django.core.cache import cache
 
 if __name__ == "__main__":
     import wiki_parser as wp
@@ -20,6 +22,7 @@ else:
 
 connection = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
+CURRENT_PATH = os.path.dirname(__file__)
 STOP_WORDS = [
     "a",
     "about",
@@ -172,7 +175,7 @@ def create():
     #
     print("Initializing dictionary of words...")
     for filename in filenames:
-        with open(filename, "r", encoding="utf8") as file:
+        with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
             while (doc := parser.parse_document()) is not None:   
@@ -202,7 +205,7 @@ def create():
     rows, cols, values = [], [], []
     doc_f = np.zeros(len(wd))
     for filename in filenames:
-        with open(filename, "r", encoding="utf8") as file:
+        with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
             while (doc := parser.parse_document()) is not None:
@@ -236,7 +239,7 @@ def create():
 
     print(len(rows))
 
-    with open("dt-sparse.min.json", "w") as file:
+    with open(f"{CURRENT_PATH}/dt-sparse.min.json", "w") as file:
         data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
         file.write(json.dumps({
             "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
@@ -246,13 +249,16 @@ def create():
     print(f"{m}, {n}")
 
 def load():
-    with open("dt-sparse.min.json", "r", encoding="utf8") as file:
+    with open(f"{CURRENT_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
+        print()
         data = json_stream.load(file)
         storage.sparse_matrix = np.empty(data["dimensions"]["sparse_length"], dtype=storage.dt)
         for i, el in enumerate(data["data"].persistent()):
             storage.sparse_matrix[i]["row"] =  el["row"]
             storage.sparse_matrix[i]["col"] =  el["col"]
             storage.sparse_matrix[i]["value"] =  el["value"]
+        cache.set("sparse_matrix", storage.sparse_matrix)
+        # print(storage.sparse_matrix)
 
 
 if __name__ == "__main__":
