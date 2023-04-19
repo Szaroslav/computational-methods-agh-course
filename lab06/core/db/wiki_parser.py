@@ -82,21 +82,6 @@ class WikiParser:
                     j = closing_idx + len(WikiParser.CLOSING_CONTENT_TAG)
                 substr = line[i:j]
 
-                # ws = substr \
-                #     .replace(", ", " ") \
-                #     .replace(". ", " ") \
-                #     .replace("|", " ") \
-                #     .replace("{{clear}}", "") \
-                #     .replace("[[", "") \
-                #     .replace("]]", "") \
-                #     .replace("{{", "") \
-                #     .replace("}}", "") \
-                #     .replace("'''", "") \
-                #     .replace("==", "") \
-                #     .replace("===", "") \
-                #     .lower() \
-                #     .split()
-
                 doc += substr
 
             if closing_idx >= 0:
@@ -127,13 +112,6 @@ class WikiParser:
                 if closing_idx >= 0:
                     j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
                 substr = line[i:j]
-
-                # if opening_idx >= 0 and closing_idx >= 0:
-                #     i, j = opening_idx, closing_idx + len(WikiParser.OPENING_ARTICLE_TAG)
-                # elif opening_idx >= 0 and closing_idx < 0:
-                #     i, j = opening_idx, len(line)
-                # elif opening_idx < 0 and closing_idx >= 0:
-                #     i, j = 0, closing_idx + len(WikiParser.OPENING_ARTICLE_TAG)
                 
                 doc += substr
 
