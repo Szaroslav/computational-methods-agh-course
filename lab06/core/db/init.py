@@ -12,6 +12,8 @@ import json_stream
 from io import TextIOWrapper
 from functools import reduce
 from django.core.cache import cache, caches
+from scipy.sparse.linalg import svds
+from scipy.sparse import csc_array
 
 if __name__ == "__main__":
     import storage as storage
@@ -20,7 +22,7 @@ else:
     import db.storage as storage
     import db.wiki_parser as wp
 
-
+K = 100
 CURRENT_PATH = os.path.dirname(__file__)
 filenames: list[str] = [
     "chesswiki.test.xml"
@@ -219,27 +221,18 @@ def create():
 
             while (doc := parser.parse_document()) is not None:
                 words = tokenize(clean(doc).lower())
-                di = frequency_vector(words)
-                doc_f += document_frequency(di, wd)
-                norm_di = reduce(lambda acc, x: acc + x**2, [f for f in di.values()], 0)**.5
-                di = { key: value / norm_di for key, value in di.items() }
+                dj = frequency_vector(words)
+                doc_f += document_frequency(dj, wd)
+                # norm2_dj = reduce(lambda acc, x: acc + x**2, [f for f in dj.values()], 0)**.5
+                dj = { key: value for key, value in dj.items() }
 
-                r, c, v = sparse_matrix(di, wd, n)
+                r, c, v = sparse_matrix(dj, wd, n)
                 rows += r
                 cols += c
                 values += v
 
                 n += 1
                 # print(n)
-
-    # A = coo_matrix((values, (rows, cols)), shape=(m, n))
-    # IDF = np.empty(m)
-    # for i in range(m):
-    #     IDF[i] = idf(i)
-    # indicies = zip(A.row, A.col)
-    # A = A.tocsr()
-    # for i, j in indicies:
-    #     A[i, j] *= IDF[i]
 
     IDF = np.empty(m)
     for i in range(m):
@@ -267,16 +260,50 @@ def load():
 
         storage.sparse_matrix_dims = (data["dimensions"]["m"], data["dimensions"]["n"])
         cache.set("sparse_matrix_dims", storage.sparse_matrix_dims)
+        norms2 = np.zeros(storage.sparse_matrix_dims[1])
 
         storage.sparse_matrix = np.empty(data["dimensions"]["sparse_length"], dtype=storage.dt)
         for i, el in enumerate(data["data"]):
             storage.sparse_matrix[i]["row"]     = el["row"]
             storage.sparse_matrix[i]["col"]     = el["col"]
             storage.sparse_matrix[i]["value"]   = el["value"]
-        cache.set("sparse_matrix", storage.sparse_matrix)
+            norms2[el["col"]]                  += el["value"]**2
 
         storage.bow = bag_of_words()
         cache.set("bag_of_words", storage.bow)
+
+        if K is not None and K >= 1:
+            m, n = storage.sparse_matrix_dims
+            rows, cols, values = [], [], []
+            for el in storage.sparse_matrix:
+                rows.append(el["row"])
+                cols.append(el["col"])
+                values.append(el["value"])
+            storage.scipy_s_matrix = csc_array((values, (rows, cols)), shape=(m, n))
+            storage.U, storage.D, storage.V = svds(storage.scipy_s_matrix, k=K)
+
+            S = np.zeros((K, n))
+            storage.S = S
+            for i in range(K):
+                for j in range(n):
+                    S[i][j] = storage.D[i] * storage.V[i][j]
+
+        if K is not None and K >= 1:
+            norms2 = np.zeros(n)
+            for i in range(K):
+                for j in range(n):
+                    norms2[j] += S[i][j]**2
+            norms2 = np.array([n**.5 for n in norms2])
+
+            for i in range(K):
+                for j in range(n):
+                    S[i][j] /= norms2[j]
+            cache.set("S", storage.S)
+        else:
+            norms2 = np.array([n**.5 for n in norms2])
+            for i in range(len(storage.sparse_matrix)):
+                storage.sparse_matrix[i]["value"] /= norms2[el["col"]]
+            cache.set("sparse_matrix", storage.sparse_matrix)
 
 
 if __name__ == "__main__":
