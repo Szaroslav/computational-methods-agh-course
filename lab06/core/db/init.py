@@ -22,7 +22,7 @@ else:
     import db.storage as storage
     import db.wiki_parser as wp
 
-K = 100
+K = 80
 CURRENT_PATH = os.path.dirname(__file__)
 filenames: list[str] = [
     "chesswiki.test.xml"
@@ -208,6 +208,7 @@ def create():
 
     wd = bag_of_words()
     m = len(wd)
+    print(m)
 
     #
     # Iterate over every document available in the dumps
@@ -241,9 +242,9 @@ def create():
     for k, i in enumerate(rows):
         values[k] *= IDF[i]
 
-    print(len(rows))
+    print(m, n, len(rows))
 
-    with open(f"{CURRENT_PATH}/dt-sparse.min.json", "w") as file:
+    with open(f"{CURRENT_PATH}/dt-sparse.full.min.json", "w") as file:
         data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
         storage.sparse_matrix = data
         cache.set("sparse_matrix", data)
@@ -256,6 +257,8 @@ def create():
 
 def load():
     with open(f"{CURRENT_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
+        print("Loading JSON...")
+
         data = json_stream.load(file, persistent=True)
 
         storage.sparse_matrix_dims = (data["dimensions"]["m"], data["dimensions"]["n"])
