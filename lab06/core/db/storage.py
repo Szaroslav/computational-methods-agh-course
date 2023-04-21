@@ -5,7 +5,7 @@ import json_stream
 if __name__ == "__main__":
     import constants
 else:
-    import constants as constants
+    import db.constants as constants
 
 dt = np.dtype([("row", np.uint32), ("col", np.uint32), ("value", np.float32)])
 

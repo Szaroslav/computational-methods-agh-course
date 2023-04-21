@@ -64,7 +64,7 @@ class WikiParser:
 
         if doc is None:
             return None, None
-        print(doc)
+        
         opening_idx: int = doc.find(WikiParser.OPENING_CONTENT_TAG)
         closing_idx: int = doc.find(WikiParser.CLOSING_CONTENT_TAG)
         i, j = doc.find(">", opening_idx) + 1, closing_idx + len(WikiParser.CLOSING_CONTENT_TAG)
@@ -82,23 +82,21 @@ class WikiParser:
             
             opening_idx: int = line.find(WikiParser.OPENING_ARTICLE_TAG)
             closing_idx: int = line.find(WikiParser.CLOSING_ARTICLE_TAG)
-            if closing_idx >= 0:
-                print(opening_idx, closing_idx)
 
-            if opening_idx >= 0 or self._read_mode:
+            i, j = 0, len(line)
+            if self._read_mode and closing_idx >= 0:
+                j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
+            elif opening_idx >= 0:
                 self._read_mode = True
-
-                # if opening_idx < 0 and closing_idx < 0:
-                i, j = 0, len(line)
-                if opening_idx >= 0:
-                    i = opening_idx
                 if closing_idx >= 0:
                     j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
-                substr = line[i:j]
-                doc += substr
+            
+            substr = line[i:j]
+            doc += substr
 
             if closing_idx >= 0:
                 self._read_mode = False
+                self._file.seek(self._file.tell() - len(line) + closing_idx + len(WikiParser.OPENING_ARTICLE_TAG))
                 return doc
 
         return None
