@@ -161,8 +161,8 @@ cython_debug/
 .vscode
 
 # Wikipedia XML dumps
-db/*.xml*
-db/*.json
+**/db/**/*.xml*
+**/db/**/*.json
 
 # Wikipedia XML dumps (not compressed)
 # db/*.xml

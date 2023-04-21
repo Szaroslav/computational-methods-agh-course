@@ -41,7 +41,7 @@ def search(request):
 
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
-        db.init.create()
+        db.init.load()
 
     q = np.array(tokenize(request.GET.get("q", "")))
     query = {}
@@ -82,9 +82,13 @@ def search(request):
         magnitudes = np.array([d / query_norm for d in ds])
         M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
 
-    print(np.sort(M, axis=0)[::-1][:k])
+    M = np.sort(M, axis=0)[::-1][:k]
+    print(M)
 
-    return HttpResponse()
+    #
+    # Return documents content
+    #
+    return HttpResponse(json.dumps(storage.get_contents(np.array([i for _, i in M]))))
 
 def count(request):
     # c = 0

@@ -16,98 +16,20 @@ from scipy.sparse.linalg import svds
 from scipy.sparse import csc_array
 
 if __name__ == "__main__":
-    import storage as storage
-    import wiki_parser as wp
+    import constants
+    import storage
+    import wiki_parser
 else:
+    import db.constants as constants
     import db.storage as storage
     import db.wiki_parser as wp
 
-K = 80
+K = constants.K
 CURRENT_PATH = os.path.dirname(__file__)
-filenames: list[str] = [
-    "chesswiki.test.xml"
-]
-STOP_WORDS = [
-    "a",
-    "about",
-    "actually",
-    "almost",
-    "also",
-    "although",
-    "always",
-    "am",
-    "an",
-    "and",
-    "any",
-    "are",
-    "as",
-    "at",
-    "be",
-    "became",
-    "become",
-    "but",
-    "by",
-    "can",
-    "could",
-    "did",
-    "do",
-    "does",
-    "each",
-    "either",
-    "else",
-    "for",
-    "from",
-    "had",
-    "has",
-    "have",
-    "hence",
-    "how",
-    "i",
-    "if",
-    "in",
-    "is",
-    "it",
-    "its",
-    "just",
-    "may",
-    "maybe",
-    "me",
-    "might",
-    "mine",
-    "must",
-    "my",
-    "mine",
-    "must",
-    "my",
-    "neither",
-    "nor",
-    "not",
-    "of",
-    "oh",
-    "ok",
-    "when",
-    "where",
-    "whereas",
-    "wherever",
-    "whenever",
-    "whether",
-    "which",
-    "while",
-    "who",
-    "whom",
-    "whoever",
-    "whose",
-    "why",
-    "will",
-    "with",
-    "within",
-    "without",
-    "would",
-    "yes",
-    "yet",
-    "you",
-    "your"
-]
+FILENAMES: list[str] = constants.FILENAMES
+FILES_PATH = constants.FILES_PATH
+DOCUMENTS_NAME = constants.DOCUMENTS_NAME
+STOP_WORDS = constants.STOP_WORDS
 
 # nltk.download('wordnet')
 # nltk.download('punkt')
@@ -173,8 +95,8 @@ def bag_of_words() -> dict[str, int]:
     wd: dict[str, int] = {}
 
     print("Initializing dictionary of words...")
-    for filename in filenames:
-        with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
+    for filename in FILENAMES:
+        with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
             while (doc := parser.parse_document()) is not None:
@@ -197,14 +119,14 @@ def bag_of_words() -> dict[str, int]:
 def create_json_docs(n: int):
     @json_stream.streamable_list
     def json_docs():
-        for filename in filenames:
-            with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
+        for filename in FILENAMES:
+            with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
                 parser = wp.WikiParser(file)
                 while (doc := parser.parse_document()) is not None:
                     yield clean(doc)
 
     print("Creating JSON of document contents...")
-    with open(f"{CURRENT_PATH}/documents.json", "w", encoding="utf8") as jsonf:
+    with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENTS_NAME}", "w", encoding="utf8") as jsonf:
         data = json_docs()
         json.dump(data, jsonf)
 
@@ -235,8 +157,8 @@ def create():
     print("Iterating over every document available in the dumps...")
     rows, cols, values = [], [], []
     doc_f = np.zeros(len(wd))
-    for filename in filenames:
-        with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
+    for filename in FILENAMES:
+        with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
             while (doc := parser.parse_document()) is not None:
@@ -263,7 +185,7 @@ def create():
 
     print(m, n, len(rows))
 
-    with open(f"{CURRENT_PATH}/dt-sparse.full.min.json", "w") as file:
+    with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.full.min.json", "w") as file:
         data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
         storage.sparse_matrix = data
         cache.set("sparse_matrix", data)
@@ -275,7 +197,7 @@ def create():
     print(f"{m}, {n}")
 
 def load():
-    with open(f"{CURRENT_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
+    with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
         print("Loading JSON...")
 
         data = json_stream.load(file, persistent=True)
