@@ -9,6 +9,7 @@ from django.core.cache import cache
 import db.init
 import db.storage as storage
 from time import time
+import unicodedata
 
 import nltk
 nltk.download('punkt')
@@ -41,7 +42,7 @@ def search(request):
 
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
-        db.init.load()
+        db.init.create()
 
     q = np.array(tokenize(request.GET.get("q", "")))
     query = {}
@@ -88,7 +89,7 @@ def search(request):
     #
     # Return documents content
     #
-    return HttpResponse(json.dumps(storage.get_contents(np.array([i for _, i in M]))))
+    return HttpResponse(json.dumps(storage.get_contents(np.array([i for _, i in M], dtype=np.uint16))), content_type="application/json")
 
 def count(request):
     # c = 0

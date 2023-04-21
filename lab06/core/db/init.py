@@ -1,4 +1,5 @@
 import os
+import re
 from copy import copy
 from scipy.sparse import coo_matrix
 from mediawiki_dump.tokenizer import clean, tokenize
@@ -18,7 +19,7 @@ from scipy.sparse import csc_array
 if __name__ == "__main__":
     import constants
     import storage
-    import wiki_parser
+    import wiki_parser as wp
 else:
     import db.constants as constants
     import db.storage as storage
@@ -123,91 +124,113 @@ def create_json_docs(n: int):
             with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
                 parser = wp.WikiParser(file)
                 while (doc := parser.parse_document()) is not None:
-                    yield clean(doc)
+                    clean_doc = clean(doc)
+                    for i in range(len(clean_doc)):
+                        if ord(clean_doc[i]) == 55308:
+                            clean_doc[i] = ' '
+                    yield clean_doc
 
     print("Creating JSON of document contents...")
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENTS_NAME}", "w", encoding="utf8") as jsonf:
         data = json_docs()
-        json.dump(data, jsonf)
+        json.dump(data, jsonf, ensure_ascii=False)
 
 def create():
-    n: int = 0
-    m: int = 0
-    # mx, mn = (0, ""), (math.inf, "") 
-
-    # for word in tokenize("chess is an abstract board game. playing chess is really fun. king is a chess piece"):
-    #     print(stemmer.stem(word))
-
-    def idf(i: int):
-        return np.log10(n / doc_f[i])
-
-    #
-    # Create JSON of document contents
-    #
-    create_json_docs(n)
-
-    wd = bag_of_words()
-    m = len(wd)
-    print(m)
-
-
-    #
-    # Iterate over every document available in the dumps
-    #
-    print("Iterating over every document available in the dumps...")
-    rows, cols, values = [], [], []
-    doc_f = np.zeros(len(wd))
-    for filename in FILENAMES:
-        with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
+    with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.xml", "r") as file:
+        with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.newww.xml", "a", encoding="utf8") as wfile:
             parser = wp.WikiParser(file)
+            pattern = re.compile("chess", re.IGNORECASE)
 
-            while (doc := parser.parse_document()) is not None:
-                words = tokenize(clean(doc).lower())
-                dj = frequency_vector(words)
-                doc_f += document_frequency(dj, wd)
-                # norm2_dj = reduce(lambda acc, x: acc + x**2, [f for f in dj.values()], 0)**.5
-                dj = { key: value for key, value in dj.items() }
+            while (pd := parser.parse_document()) != (None, None):
+                content, doc = pd
+                # words = tokenize(clean(content).lower())
+                # print(content)
+                # for w in words:
+                #     if w == "chess":
+                #         print(w)
+                #         wfile.write(doc)
+                #         break
+                pass
+            wfile.close()
+    
+    # n: int = 0
+    # m: int = 0
+    # # mx, mn = (0, ""), (math.inf, "") 
 
-                r, c, v = sparse_matrix(dj, wd, n)
-                rows += r
-                cols += c
-                values += v
+    # # for word in tokenize("chess is an abstract board game. playing chess is really fun. king is a chess piece"):
+    # #     print(stemmer.stem(word))
 
-                n += 1
-                # print(n)
+    # def idf(i: int):
+    #     return np.log10(n / doc_f[i])
 
-    IDF = np.empty(m)
-    for i in range(m):
-        IDF[i] = idf(i)
+    # #
+    # # Create JSON of document contents
+    # #
+    # create_json_docs(n)
 
-    for k, i in enumerate(rows):
-        values[k] *= IDF[i]
+    # wd = bag_of_words()
+    # m = len(wd)
+    # print(m)
 
-    print(m, n, len(rows))
 
-    with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.full.min.json", "w") as file:
-        data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
-        storage.sparse_matrix = data
-        cache.set("sparse_matrix", data)
-        file.write(json.dumps({
-            "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
-            "data": data
-        }))
+    # #
+    # # Iterate over every document available in the dumps
+    # #
+    # print("Iterating over every document available in the dumps...")
+    # rows, cols, values = [], [], []
+    # doc_f = np.zeros(len(wd))
+    # for filename in FILENAMES:
+    #     with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
+    #         parser = wp.WikiParser(file)
 
-    print(f"{m}, {n}")
+    #         while (doc := parser.parse_document()) is not None:
+    #             words = tokenize(clean(doc).lower())
+    #             dj = frequency_vector(words)
+    #             doc_f += document_frequency(dj, wd)
+    #             # norm2_dj = reduce(lambda acc, x: acc + x**2, [f for f in dj.values()], 0)**.5
+    #             dj = { key: value for key, value in dj.items() }
+
+    #             r, c, v = sparse_matrix(dj, wd, n)
+    #             rows += r
+    #             cols += c
+    #             values += v
+
+    #             n += 1
+    #             # print(n)
+
+    # IDF = np.empty(m)
+    # for i in range(m):
+    #     IDF[i] = idf(i)
+
+    # for k, i in enumerate(rows):
+    #     values[k] *= IDF[i]
+
+    # print(m, n, len(rows))
+
+    # with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.full.min.json", "w") as file:
+    #     data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
+    #     storage.sparse_matrix = data
+    #     cache.set("sparse_matrix", data)
+    #     file.write(json.dumps({
+    #         "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
+    #         "data": data
+    #     }))
+
+    # print(f"{m}, {n}")
 
 def load():
     with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
         print("Loading JSON...")
 
-        data = json_stream.load(file, persistent=True)
+        data = json_stream.load(file)
+        dimensions = data["dimensions"].persistent()
 
-        storage.sparse_matrix_dims = (data["dimensions"]["m"], data["dimensions"]["n"])
+        storage.sparse_matrix_dims = (dimensions["m"], dimensions["n"])
         cache.set("sparse_matrix_dims", storage.sparse_matrix_dims)
         norms2 = np.zeros(storage.sparse_matrix_dims[1])
 
-        storage.sparse_matrix = np.empty(data["dimensions"]["sparse_length"], dtype=storage.dt)
-        for i, el in enumerate(data["data"]):
+        storage.sparse_matrix = np.empty(dimensions["sparse_length"], dtype=storage.dt)
+        for i, el in enumerate(data["data"].persistent()):
             storage.sparse_matrix[i]["row"]     = el["row"]
             storage.sparse_matrix[i]["col"]     = el["col"]
             storage.sparse_matrix[i]["value"]   = el["value"]

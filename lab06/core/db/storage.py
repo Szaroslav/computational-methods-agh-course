@@ -5,7 +5,7 @@ import json_stream
 if __name__ == "__main__":
     import constants
 else:
-    import db.constants as constants
+    import constants as constants
 
 dt = np.dtype([("row", np.uint32), ("col", np.uint32), ("value", np.float32)])
 
@@ -21,9 +21,7 @@ def get_contents(indicies):
     indicies = np.sort(indicies)
     contents = []
 
-    print(os.path.dirname(__file__))
-    print(f"{os.path.dirname(__file__)}/{constants.FILES_PATH}/{constants.DOCUMENTS_NAME}")
-    with open(f"{os.path.dirname(__file__)}/{constants.FILES_PATH}/{constants.DOCUMENTS_NAME}", "r") as file:
+    with open(f"{os.path.dirname(__file__)}/{constants.FILES_PATH}/{constants.DOCUMENTS_NAME}", "r", encoding="utf8") as file:
         data = json_stream.load(file)
 
         j = 0

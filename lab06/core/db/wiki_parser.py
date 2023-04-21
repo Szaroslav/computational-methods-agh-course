@@ -59,36 +59,17 @@ class WikiParser:
             return words
         return []
 
-    def parse_document(self) -> str | None:
-        doc = ""
+    def parse_document(self) -> tuple[str, str] | tuple[None, None]:
+        doc = self.get_document()
 
-        while True:
-            line = self._file.readline()
-            if line == '':
-                self._file.close()
-                return None
-
-            opening_idx: int = line.find(WikiParser.OPENING_CONTENT_TAG)
-            closing_idx: int = line.find(WikiParser.CLOSING_CONTENT_TAG)
-
-            if opening_idx >= 0 or self._read_mode:
-                self._read_mode = True
-
-                # if opening_idx < 0 and closing_idx < 0:
-                i, j = 0, len(line)
-                if opening_idx >= 0:
-                    i = line.find(">", opening_idx) + 1
-                if closing_idx >= 0:
-                    j = closing_idx + len(WikiParser.CLOSING_CONTENT_TAG)
-                substr = line[i:j]
-
-                doc += substr
-
-            if closing_idx >= 0:
-                self._read_mode = False
-                return doc
-
-        return None
+        if doc is None:
+            return None, None
+        print(doc)
+        opening_idx: int = doc.find(WikiParser.OPENING_CONTENT_TAG)
+        closing_idx: int = doc.find(WikiParser.CLOSING_CONTENT_TAG)
+        i, j = doc.find(">", opening_idx) + 1, closing_idx + len(WikiParser.CLOSING_CONTENT_TAG)
+        
+        return doc[i:j], doc
 
     def get_document(self) -> str | None:
         doc = ""
@@ -98,9 +79,11 @@ class WikiParser:
             if line == '':
                 self._file.close()
                 return None
-
+            
             opening_idx: int = line.find(WikiParser.OPENING_ARTICLE_TAG)
             closing_idx: int = line.find(WikiParser.CLOSING_ARTICLE_TAG)
+            if closing_idx >= 0:
+                print(opening_idx, closing_idx)
 
             if opening_idx >= 0 or self._read_mode:
                 self._read_mode = True
@@ -112,7 +95,6 @@ class WikiParser:
                 if closing_idx >= 0:
                     j = closing_idx + len(WikiParser.CLOSING_ARTICLE_TAG)
                 substr = line[i:j]
-                
                 doc += substr
 
             if closing_idx >= 0:
