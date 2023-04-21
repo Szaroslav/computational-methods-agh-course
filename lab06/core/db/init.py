@@ -177,7 +177,7 @@ def bag_of_words() -> dict[str, int]:
         with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
-            while (doc := parser.parse_document()) is not None:   
+            while (doc := parser.parse_document()) is not None:
                 words = tokenize(clean(doc).lower())
                 wd.update(words_dict(words))
     
@@ -194,6 +194,19 @@ def bag_of_words() -> dict[str, int]:
 
     return wd
 
+def create_json_docs(n: int):
+    @json_stream.streamable_list
+    def json_docs():
+        for filename in filenames:
+            with open(f"{CURRENT_PATH}/{filename}", "r", encoding="utf8") as file:
+                parser = wp.WikiParser(file)
+                while (doc := parser.parse_document()) is not None:
+                    yield clean(doc)
+
+    print("Creating JSON of document contents...")
+    with open(f"{CURRENT_PATH}/documents.json", "w", encoding="utf8") as jsonf:
+        data = json_docs()
+        json.dump(data, jsonf)
 
 def create():
     n: int = 0
@@ -206,9 +219,15 @@ def create():
     def idf(i: int):
         return np.log10(n / doc_f[i])
 
+    #
+    # Create JSON of document contents
+    #
+    create_json_docs(n)
+
     wd = bag_of_words()
     m = len(wd)
     print(m)
+
 
     #
     # Iterate over every document available in the dumps
