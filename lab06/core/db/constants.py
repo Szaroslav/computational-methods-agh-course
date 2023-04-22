@@ -3,7 +3,8 @@ FILENAMES: list[str] = [
     "chesswiki.test.xml"
 ]
 FILES_PATH = "files"
-DOCUMENTS_NAME = "documents.json"
+DOCUMENT_TERM_NAME = "dt-sparse.test.min.json"
+DOCUMENTS_NAME = "documents.test.min.json"
 STOP_WORDS = [
     "a",
     "about",

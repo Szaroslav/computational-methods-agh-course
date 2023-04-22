@@ -29,5 +29,6 @@ def get_contents(indicies):
             if i == indicies[j]:
                 contents.append(d)
                 j += 1
+                if j >= len(indicies): break
 
     return contents

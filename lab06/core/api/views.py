@@ -42,7 +42,7 @@ def search(request):
 
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
-        db.init.create()
+        db.init.load()
 
     q = np.array(tokenize(request.GET.get("q", "")))
     query = {}

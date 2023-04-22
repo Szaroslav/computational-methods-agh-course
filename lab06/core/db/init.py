@@ -29,6 +29,7 @@ K = constants.K
 CURRENT_PATH = os.path.dirname(__file__)
 FILENAMES: list[str] = constants.FILENAMES
 FILES_PATH = constants.FILES_PATH
+DOCUMENT_TERM_NAME = constants.DOCUMENT_TERM_NAME
 DOCUMENTS_NAME = constants.DOCUMENTS_NAME
 STOP_WORDS = constants.STOP_WORDS
 
@@ -100,8 +101,9 @@ def bag_of_words() -> dict[str, int]:
         with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
-            while (doc := parser.parse_document()) is not None:
-                words = tokenize(clean(doc).lower())
+            while (pd := parser.parse_document()) != (None, None):
+                content, _ = pd
+                words = tokenize(clean(content).lower())
                 wd.update(words_dict(words))
     
     #
@@ -117,23 +119,24 @@ def bag_of_words() -> dict[str, int]:
 
     return wd
 
-def create_json_docs(n: int):
+def create_json_docs():
     @json_stream.streamable_list
     def json_docs():
         for filename in FILENAMES:
             with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
                 parser = wp.WikiParser(file)
-                while (doc := parser.parse_document()) is not None:
-                    clean_doc = clean(doc)
-                    for i in range(len(clean_doc)):
-                        if ord(clean_doc[i]) == 55308:
-                            clean_doc[i] = ' '
-                    yield clean_doc
+                while (pd := parser.parse_document()) != (None, None):
+                    clean_content = clean(pd[0])
+                    # for i in range(len(clean_content)):
+                    #     if ord(clean_content[i]) == 55308:
+                    #         clean_content[i] = ' '
+                    yield clean_content
 
     print("Creating JSON of document contents...")
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENTS_NAME}", "w", encoding="utf8") as jsonf:
         data = json_docs()
         json.dump(data, jsonf, ensure_ascii=False)
+        jsonf.close()
 
 def create():  
     n: int = 0
@@ -148,7 +151,7 @@ def create():
     #
     # Create JSON of document contents
     #
-    create_json_docs(n)
+    # create_json_docs()
 
     wd = bag_of_words()
     m = len(wd)
@@ -165,8 +168,8 @@ def create():
         with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
 
-            while (doc := parser.parse_document()) is not None:
-                words = tokenize(clean(doc).lower())
+            while (pd := parser.parse_document()) != (None, None):
+                words = tokenize(clean(pd[0]).lower())
                 dj = frequency_vector(words)
                 doc_f += document_frequency(dj, wd)
                 # norm2_dj = reduce(lambda acc, x: acc + x**2, [f for f in dj.values()], 0)**.5
@@ -189,7 +192,7 @@ def create():
 
     print(m, n, len(rows))
 
-    with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.full.min.json", "w") as file:
+    with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENT_TERM_NAME}", "w") as file:
         data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
         storage.sparse_matrix = data
         cache.set("sparse_matrix", data)
@@ -197,11 +200,12 @@ def create():
             "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
             "data": data
         }))
+        file.close()
 
     print(f"{m}, {n}")
 
 def load():
-    with open(f"{CURRENT_PATH}/{FILES_PATH}/dt-sparse.min.json", "r", encoding="utf8") as file:
+    with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENT_TERM_NAME}", "r", encoding="utf8") as file:
         print("Loading JSON...")
 
         data = json_stream.load(file)
