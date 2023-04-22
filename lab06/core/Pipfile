@@ -29,6 +29,7 @@ sqlparse = "==0.4.3"
 tqdm = "==4.65.0"
 urllib3 = "==1.26.15"
 json-stream = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 
