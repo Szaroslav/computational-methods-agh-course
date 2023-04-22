@@ -127,6 +127,7 @@ def create_json_docs():
                 parser = wp.WikiParser(file)
                 while (pd := parser.parse_document()) != (None, None):
                     clean_content = clean(pd[0])
+                    print(clean_content)
                     # for i in range(len(clean_content)):
                     #     if ord(clean_content[i]) == 55308:
                     #         clean_content[i] = ' '
@@ -151,7 +152,7 @@ def create():
     #
     # Create JSON of document contents
     #
-    # create_json_docs()
+    create_json_docs()
 
     wd = bag_of_words()
     m = len(wd)

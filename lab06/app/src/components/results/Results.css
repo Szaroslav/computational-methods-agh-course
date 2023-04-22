@@ -1,0 +1,14 @@
+.results-container {
+    padding: 1rem 2rem;
+}
+
+.results-list {
+    list-style-type: none;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    gap: 1rem;
+    text-align: justify;
+    white-space: normal;
+}

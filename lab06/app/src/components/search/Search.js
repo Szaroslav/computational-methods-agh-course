@@ -22,8 +22,8 @@ function Search(props) {
         <div className="search-container">
             <h1>Chess search</h1>
             <form onSubmit={ handleSearch } className="search-form">
-                <input type="search" value={ query } onChange={ handleQuery }/>
-                <input type="submit" value="Search" />
+                <input type="search" value={ query } onChange={ handleQuery } className="search-input"/>
+                <input type="submit" value="Search" className="search-button" />
             </form>
         </div>
     );
