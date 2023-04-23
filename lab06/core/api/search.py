@@ -1,6 +1,7 @@
 import numpy as np
 import db.init
 import db.storage as storage
+from time import time
 from mediawiki_dump.tokenizer import tokenize
 
 
@@ -31,8 +32,7 @@ def search(sparse, dims, bow, q, k) -> np.ndarray:
             if query[i]:
                 for j in range(db.init.K):
                     v[j] += query[i] * storage.U[i][j]
-        magnitudes = np.array([np.matmul(v, storage.S[:, j]) / query_norm for j in range(dims[1])])
-        M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
+        M = np.array([abs((v @ storage.S[:, j]) / query_norm) for j in range(dims[1])])
 
         print(f"{time() - start} s")
     #
@@ -46,14 +46,12 @@ def search(sparse, dims, bow, q, k) -> np.ndarray:
         #         break
         # if not is_query_valid:
 
-
         ds = np.zeros(dims[1])
         for el in sparse:
             if query.get(el["row"]) is not None:
                 ds[el["col"]] += el["value"]
 
         M = np.array([abs(d / query_norm) for d in ds])
-        # M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
 
     indicies = np.argsort(M)[::-1][:k]
     XD = np.array([(i, M[i]) for i in indicies])

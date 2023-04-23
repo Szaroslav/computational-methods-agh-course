@@ -2,7 +2,8 @@ import os
 import re
 from copy import copy
 from scipy.sparse import coo_matrix
-from mediawiki_dump.tokenizer import clean, tokenize
+from mediawiki_dump.tokenizer import tokenize
+import mediawiki_dump.tokenizer as mwd
 import nltk
 from nltk.corpus import wordnet
 from nltk.stem import *
@@ -12,7 +13,7 @@ import numpy as np
 import json_stream
 from io import TextIOWrapper
 from functools import reduce
-from django.core.cache import cache, caches
+from django.core.cache import cache
 from scipy.sparse.linalg import svds
 from scipy.sparse import csc_array
 
@@ -39,6 +40,42 @@ STOP_WORDS = constants.STOP_WORDS
 # lemmatizer = WordNetLemmatizer()
 stemmer = PorterStemmer()
 
+
+def clean(str: str) -> str:
+    str = mwd.clean(str)
+
+    #
+    # HTML/XML tags
+    #
+    str = re.sub(r"&lt;\/?.+&gt;", " ", str)
+
+    #
+    # Escaped chars
+    #
+    str = re.sub(r"&\w+;", " ", str)
+    str = re.sub(r"nbsp;", " ", str)
+
+    #
+    # Bold sentences (''')
+    #
+    str = re.sub(r"'''", " ", str)
+
+    #
+    # Brackets and .,;
+    #
+    str = re.sub(r"(\(|\))", " ", str)
+    str = re.sub(r"([\.,;]\s+){2,}", " ", str)
+    str = re.sub(r"([\.,;]\s+){2,}", " ", str)
+    str = re.sub(r"(\s+[\.,;])", " ", str)
+
+    #
+    # Whitespace cleaning
+    #
+    str = re.sub(r" {2,}", " ", str)
+    str = re.sub(r"\t{2,}", "\t", str)
+    str = re.sub(r"\n{2,}", "\n", str)
+
+    return str
 
 def words_dict(words: list[str]) -> dict[str, int]:
     words_dict: dict[str, int] = {}
@@ -128,16 +165,12 @@ def create_json_docs():
                 parser = wp.WikiParser(file)
                 while (pd := parser.parse_document()) != (None, None):
                     clean_content = clean(pd[0])
-                    # print(clean_content)
-                    # for i in range(len(clean_content)):
-                    #     if ord(clean_content[i]) == 55308:
-                    #         clean_content[i] = ' '
                     yield clean_content
 
     print("Creating JSON of document contents...")
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENTS_NAME}", "w", encoding="utf8") as jsonf:
         data = json_docs()
-        json.dump(data, jsonf, ensure_ascii=False)
+        json.dump(data, jsonf, ensure_ascii=False, indent=4)
         jsonf.close()
 
 def create():  
@@ -287,7 +320,7 @@ def create_test_file():
             i = 0
 
             while (pd := parser.parse_document()) != (None, None):
-                if i == 1200:
+                if i == 900:
                     break
                 i += 1
 

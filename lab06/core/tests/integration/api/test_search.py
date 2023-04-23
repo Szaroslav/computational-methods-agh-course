@@ -3,6 +3,9 @@ from mediawiki_dump.tokenizer import tokenize
 import api.search as sr
 import numpy as np
 
+from scipy.sparse.linalg import svds
+from scipy.sparse import csc_array
+
 
 class TestSearch(ut.TestCase):
     sentences = [
@@ -43,6 +46,22 @@ class TestSearch(ut.TestCase):
     query_dict = { 7: "king", 0: "chess", 8: "piece" }
     query_vector = np.array([1, 0, 0, 0, 0, 0, 0, 1, 1])
     magnitudes = [(2, 1), (1, 2 / 21**.5), (0, 1 / (2 * 3**.5))]
+    U = [
+            [-2.22044605e-16,  8.21920919e-01],
+            [-5.16397779e-01,  1.40400855e-01],
+            [-5.16397779e-01,  1.40400855e-01],
+            [-5.16397779e-01,  1.40400855e-01],
+            [ 2.58198890e-01,  2.80801709e-01],
+            [ 2.58198890e-01,  2.80801709e-01],
+            [ 2.58198890e-01,  2.80801709e-01],
+            [ 1.28197512e-16,  1.19916646e-01],
+            [ 1.28197512e-16,  1.19916646e-01]
+    ]
+    D = [1.73205081, 2.97558431]
+    V = [
+        [-8.94427191e-01,  4.47213595e-01,  2.22044605e-16]
+        [ 4.17774579e-01, 8.35549159e-01,  3.56822090e-01]
+    ]
     # tokens = [tokenize(sentence.lower()) for sentence in sentences]
     # words_dicts: list[dict[str, int]] = [
     #     { "chess": 0, "is": 0, "an": 0, "abstract": 0, "board": 0, "game": 0 },
@@ -66,6 +85,16 @@ class TestSearch(ut.TestCase):
     # ]
 
     def test_words_dict(self):
+        # m, n = (9, 3)
+        # rows, cols, values = [], [], []
+        # for el in TestSearch.sparse_matrix:
+        #     rows.append(el["row"])
+        #     cols.append(el["col"])
+        #     values.append(el["value"])
+        # sm = csc_array((values, (rows, cols)), shape=(m, n), dtype=np.float64)
+        # U, D, V = svds(sm, k=2)
+        # print("\n", U, D, V, "\n", sep="\n")
+
         res = sr.search(
             TestSearch.normalized_sparse_matrix,
             (9, 3),

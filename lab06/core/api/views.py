@@ -1,15 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from copy import copy
-import json
-from mediawiki_dump.tokenizer import tokenize
-import math
-import numpy as np
 from django.core.cache import cache
+import json
+import numpy as np
 import db.init
 import db.storage as storage
-from time import time
-import unicodedata
 import api.search as sr
 
 import nltk
@@ -43,7 +38,7 @@ def search(request):
 
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
-        db.init.load()
+        db.init.create()
 
     q = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))

@@ -1,10 +1,10 @@
 K = None
 FILENAMES: list[str] = [
-    "chesswiki.test1.xml"
+    "chesswiki.test.xml"
 ]
 FILES_PATH = "files"
-DOCUMENT_TERM_NAME = "dt-sparse.test1.min.json"
-DOCUMENTS_NAME = "documents.test1.min.json"
+DOCUMENT_TERM_NAME = "dt-sparse.test.min.json"
+DOCUMENTS_NAME = "documents.test.json"
 STOP_WORDS = [
     "a",
     "about",
