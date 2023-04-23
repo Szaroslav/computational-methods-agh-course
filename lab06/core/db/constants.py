@@ -1,4 +1,4 @@
-K = 80
+K = None
 FILENAMES: list[str] = [
     "chesswiki.test.xml"
 ]

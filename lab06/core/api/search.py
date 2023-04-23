@@ -1,0 +1,44 @@
+import numpy as np
+import db.init
+import db.storage as storage
+from mediawiki_dump.tokenizer import tokenize
+
+
+def search(sparse, dims, bow, q, k) -> np.ndarray:
+    q = np.array(tokenize(q))
+    query = {}
+    for word in q:
+        if bow.get(word) is not None:
+            query[bow.get(word)] = word
+    query_norm = len(query)**.5
+
+    #
+    # Evaluate partially document frequencies (q^T U_k s_j) including query vector (cos(\phi))
+    #
+    if db.init.K is not None and db.init.K >= 1:
+        query = np.array([1 if query.get(i) is not None else 0 for i in range(dims[0])])
+        v = np.zeros(db.init.K)
+
+        start = time()
+
+        for i in range(dims[0]):
+            if query[i]:
+                for j in range(db.init.K):
+                    v[j] += query[i] * storage.U[i][j]
+        magnitudes = np.array([np.matmul(v, storage.S[:, j]) / query_norm for j in range(dims[1])])
+        M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
+
+        print(f"{time() - start} s")
+    #
+    # Evaluate document frequencies (q^T d_j) including query vector (cos(\theta))
+    #
+    else:
+        ds = np.zeros(dims[1])
+        for el in sparse:
+            if query.get(el["row"]) is not None:
+                ds[el["col"]] += el["value"]
+
+        magnitudes = np.array([d / query_norm for d in ds])
+        M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
+
+    return np.sort(M, axis=0)[::-1][:k]

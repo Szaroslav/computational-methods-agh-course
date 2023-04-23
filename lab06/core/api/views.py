@@ -10,6 +10,7 @@ import db.init
 import db.storage as storage
 from time import time
 import unicodedata
+import api.search as sr
 
 import nltk
 nltk.download('punkt')
@@ -44,46 +45,10 @@ def search(request):
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
         db.init.load()
 
-    q = np.array(tokenize(request.GET.get("q", "")))
-    query = {}
-    for word in q:
-        if storage.bow.get(word) is not None:
-            query[storage.bow.get(word)] = word
-    query_norm = len(query)**.5
-
+    q = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))
-    # print(query, k)
 
-    #
-    # Evaluate partially document frequencies (q^T U_k s_j) including query vector (cos(\phi))
-    #
-    if db.init.K is not None and db.init.K >= 1:
-        query = np.array([1 if query.get(i) is not None else 0 for i in range(storage.sparse_matrix_dims[0])])
-        v = np.zeros(db.init.K)
-
-        start = time()
-
-        for i in range(storage.sparse_matrix_dims[0]):
-            if query[i]:
-                for j in range(db.init.K):
-                    v[j] += query[i] * storage.U[i][j]
-        magnitudes = np.array([np.matmul(v, storage.S[:, j]) / query_norm for j in range(storage.sparse_matrix_dims[1])])
-        M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
-
-        print(f"{time() - start} s")
-    #
-    # Evaluate document frequencies (q^T d_j) including query vector (cos(\theta))
-    #
-    else:
-        ds = np.zeros(storage.sparse_matrix_dims[1])
-        for el in storage.sparse_matrix:
-            if query.get(el["row"]) is not None:
-                ds[el["col"]] += el["value"]
-
-        magnitudes = np.array([d / query_norm for d in ds])
-        M = np.array([(abs(magnitude), i) for i, magnitude in enumerate(magnitudes)])
-
-    M = np.sort(M, axis=0)[::-1][:k]
+    M = sr.search(storage.sparse_matrix, storage.sparse_matrix_dims, storage.bow, q, k)
     print(M)
 
     #

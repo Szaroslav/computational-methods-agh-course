@@ -256,7 +256,8 @@ def load():
         else:
             norms2 = np.array([n**.5 for n in norms2])
             for i in range(len(storage.sparse_matrix)):
-                storage.sparse_matrix[i]["value"] /= norms2[el["col"]]
+                el = storage.sparse_matrix[i]
+                el["value"] /= norms2[el["col"]]
             cache.set("sparse_matrix", storage.sparse_matrix)
 
 def create_test_file():
