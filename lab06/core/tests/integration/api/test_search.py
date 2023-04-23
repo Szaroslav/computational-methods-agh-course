@@ -45,8 +45,13 @@ class TestSearch(ut.TestCase):
     query = "king chess piece"
     query_dict = { 7: "king", 0: "chess", 8: "piece" }
     query_vector = np.array([1, 0, 0, 0, 0, 0, 0, 1, 1])
-    magnitudes = [(2, 1), (1, 2 / 21**.5), (0, 1 / (2 * 3**.5))]
-    U = [
+    query_norm2 = 3**.5
+    magnitudes_sparse = [(2, 1), (1, 2 / 21**.5), (0, 1 / (2 * 3**.5))]
+
+    #
+    # Partial SVD
+    #
+    U = np.array([
             [-2.22044605e-16,  8.21920919e-01],
             [-5.16397779e-01,  1.40400855e-01],
             [-5.16397779e-01,  1.40400855e-01],
@@ -56,35 +61,22 @@ class TestSearch(ut.TestCase):
             [ 2.58198890e-01,  2.80801709e-01],
             [ 1.28197512e-16,  1.19916646e-01],
             [ 1.28197512e-16,  1.19916646e-01]
-    ]
-    D = [1.73205081, 2.97558431]
-    V = [
-        [-8.94427191e-01,  4.47213595e-01,  2.22044605e-16]
+    ])
+    D = np.array([
+        [1.73205081, 0],
+        [0, 2.97558431]
+    ])
+    V = np.array([
+        [-8.94427191e-01, 4.47213595e-01,  2.22044605e-16],
         [ 4.17774579e-01, 8.35549159e-01,  3.56822090e-01]
-    ]
-    # tokens = [tokenize(sentence.lower()) for sentence in sentences]
-    # words_dicts: list[dict[str, int]] = [
-    #     { "chess": 0, "is": 0, "an": 0, "abstract": 0, "board": 0, "game": 0 },
-    #     { "play": 0, "chess": 0, "is": 0, "realli": 0, "fun": 0 },
-    #     { "king": 0, "is": 0, "a": 0, "chess": 0, "piec": 0 }
-    # ]
-    # final_words_dicts: list[dict[str, int]] = [
-    #     { "chess": 0, "is": 1, "an": 2, "abstract": 3, "board": 4, "game": 5 },
-    #     { "play": 0, "chess": 1, "is": 2, "realli": 3, "fun": 4 },
-    #     { "king": 0, "is": 1, "a": 2, "chess": 3, "piec": 4 }
-    # ]
-    # frequency_vectors: list[dict[str, int]] = [
-    #     { "chess": 1, "is": 1, "an": 1, "abstract": 1, "board": 1, "game": 1 },
-    #     { "play": 1, "chess": 2, "is": 1, "realli": 1, "fun": 1 },
-    #     { "king": 1, "is": 1, "a": 1, "chess": 1, "piec": 1 }
-    # ]
-    # document_frequencies: list[list[int]] = [
-    #     [1, 1, 1, 1, 1, 1],
-    #     [1, 1, 1, 1, 1],
-    #     [1, 1, 1, 1, 1]
-    # ]
+    ])
+    S = D @ V
+    magnitudes_svd = [(2, 0.6130040795340687), (1, 0.585257761964524), (0, 0.38364941175979644)]
 
-    def test_words_dict(self):
+    #
+    # Sparse matrix
+    #
+    def test_search_sparse(self):
         # m, n = (9, 3)
         # rows, cols, values = [], [], []
         # for el in TestSearch.sparse_matrix:
@@ -96,16 +88,42 @@ class TestSearch(ut.TestCase):
         # print("\n", U, D, V, "\n", sep="\n")
 
         res = sr.search(
-            TestSearch.normalized_sparse_matrix,
+            TestSearch.query,
             (9, 3),
             TestSearch.bag_of_words,
-            TestSearch.query,
-            3
+            sparse=TestSearch.normalized_sparse_matrix,
+            k=3
         )
-        print("\n\n", res, "\n")
+        
         for i in range(len(res)):
-            self.assertEqual(res[i][0], TestSearch.magnitudes[i][0])
-            self.assertAlmostEqual(res[i][1], TestSearch.magnitudes[i][1])
+            self.assertEqual(res[i][0], TestSearch.magnitudes_sparse[i][0])
+            self.assertAlmostEqual(res[i][1], TestSearch.magnitudes_sparse[i][1])
+
+    #
+    # Partial SVD
+    #
+    def test_search_svd(self):
+        U, S, V = TestSearch.U, TestSearch.S, TestSearch.V
+        # q, qn = TestSearch.query_vector, TestSearch.query_norm2
+        # magnitudes_svd = [(q @ U @ S[:, i]) / (qn * np.linalg.norm(S[:, i])) for i in range(len(TestSearch.V[0]))]
+        # print("\n\n", magnitudes_svd, "\n")
+
+        res = sr.search(
+            TestSearch.query,
+            (9, 3),
+            TestSearch.bag_of_words,
+            U=U,
+            S=S,
+            k=3,
+            K=2
+        )
+
+        print("\n\n", res, "\n")
+
+        for i in range(len(res)):
+            self.assertEqual(res[i][0], TestSearch.magnitudes_svd[i][0])
+            self.assertAlmostEqual(res[i][1], TestSearch.magnitudes_svd[i][1])
+
 
 
 if __name__ == "__main__":

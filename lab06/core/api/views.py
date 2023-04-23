@@ -5,6 +5,7 @@ import json
 import numpy as np
 import db.init
 import db.storage as storage
+import db.constants as constants
 import api.search as sr
 
 import nltk
@@ -38,12 +39,12 @@ def search(request):
 
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
-        db.init.create()
+        db.init.load()
 
     q = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))
 
-    M = sr.search(storage.sparse_matrix, storage.sparse_matrix_dims, storage.bow, q, k)
+    M = sr.search(storage.sparse_matrix, storage.sparse_matrix_dims, storage.bow, q, k, constants.K)
     print(M)
 
     #

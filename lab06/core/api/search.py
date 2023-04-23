@@ -5,9 +5,11 @@ from time import time
 from mediawiki_dump.tokenizer import tokenize
 
 
-def search(sparse, dims, bow, q, k) -> np.ndarray:
-    k = min(k, dims[1])
-    q = np.array(tokenize(q))
+def search(query, dims, bow, **kwargs) -> np.ndarray:
+    K = kwargs.get("K")
+    k = min(kwargs["k"], dims[1]) if kwargs.get("k") else 1
+    q = np.array(tokenize(query))
+
     query = {}
     for word in q:
         if bow.get(word) is not None:
@@ -22,17 +24,18 @@ def search(sparse, dims, bow, q, k) -> np.ndarray:
     #
     # Evaluate partially document frequencies (q^T U_k s_j) including query vector (cos(\phi))
     #
-    if db.init.K is not None and db.init.K >= 1:
+    if K is not None and K >= 1:
+        U, S = kwargs.get("U"), kwargs.get("S")
         query = np.array([1 if query.get(i) is not None else 0 for i in range(dims[0])])
-        v = np.zeros(db.init.K)
+        v = np.zeros(K)
 
         start = time()
 
         for i in range(dims[0]):
             if query[i]:
-                for j in range(db.init.K):
-                    v[j] += query[i] * storage.U[i][j]
-        M = np.array([abs((v @ storage.S[:, j]) / query_norm) for j in range(dims[1])])
+                for j in range(K):
+                    v[j] += query[i] * U[i][j]
+        M = np.array([abs((v @ S[:, j]) / query_norm) for j in range(dims[1])])
 
         print(f"{time() - start} s")
     #
@@ -45,6 +48,7 @@ def search(sparse, dims, bow, q, k) -> np.ndarray:
         #         is_query_valid = True
         #         break
         # if not is_query_valid:
+        sparse = kwargs.get("sparse")
 
         ds = np.zeros(dims[1])
         for el in sparse:
@@ -54,5 +58,4 @@ def search(sparse, dims, bow, q, k) -> np.ndarray:
         M = np.array([abs(d / query_norm) for d in ds])
 
     indicies = np.argsort(M)[::-1][:k]
-    XD = np.array([(i, M[i]) for i in indicies])
     return np.array([(i, M[i]) for i in indicies])
