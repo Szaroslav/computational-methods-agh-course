@@ -1,4 +1,4 @@
-K = 150
+K = 50
 FILENAMES: list[str] = [
     "chesswiki.test.xml"
 ]

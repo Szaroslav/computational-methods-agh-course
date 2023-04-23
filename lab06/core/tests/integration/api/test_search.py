@@ -71,6 +71,7 @@ class TestSearch(ut.TestCase):
         [ 4.17774579e-01, 8.35549159e-01,  3.56822090e-01]
     ])
     S = D @ V
+    S_norms2 = [1.9862920226405196, 2.6041167379764754, 1.0617542124654078]
     magnitudes_svd = [(2, 0.6130040795340687), (1, 0.585257761964524), (0, 0.38364941175979644)]
 
     #
@@ -104,6 +105,7 @@ class TestSearch(ut.TestCase):
     #
     def test_search_svd(self):
         U, S, V = TestSearch.U, TestSearch.S, TestSearch.V
+        S = np.array([[S[i][j] / TestSearch.S_norms2[j] for j in range(len(S[0]))] for i in range(len(S))])
         # q, qn = TestSearch.query_vector, TestSearch.query_norm2
         # magnitudes_svd = [(q @ U @ S[:, i]) / (qn * np.linalg.norm(S[:, i])) for i in range(len(TestSearch.V[0]))]
         # print("\n\n", magnitudes_svd, "\n")
@@ -118,12 +120,9 @@ class TestSearch(ut.TestCase):
             K=2
         )
 
-        print("\n\n", res, "\n")
-
         for i in range(len(res)):
             self.assertEqual(res[i][0], TestSearch.magnitudes_svd[i][0])
             self.assertAlmostEqual(res[i][1], TestSearch.magnitudes_svd[i][1])
-
 
 
 if __name__ == "__main__":
