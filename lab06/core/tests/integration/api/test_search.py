@@ -42,7 +42,7 @@ class TestSearch(ut.TestCase):
     query = "king chess piece"
     query_dict = { 7: "king", 0: "chess", 8: "piece" }
     query_vector = np.array([1, 0, 0, 0, 0, 0, 0, 1, 1])
-    magnitudes = [(1, 2), (2 / 21**.5, 1), (1 / (2 * 3**.5), 0)]
+    magnitudes = [(2, 1), (1, 2 / 21**.5), (0, 1 / (2 * 3**.5))]
     # tokens = [tokenize(sentence.lower()) for sentence in sentences]
     # words_dicts: list[dict[str, int]] = [
     #     { "chess": 0, "is": 0, "an": 0, "abstract": 0, "board": 0, "game": 0 },
@@ -75,8 +75,8 @@ class TestSearch(ut.TestCase):
         )
         print("\n\n", res, "\n")
         for i in range(len(res)):
-            self.assertAlmostEqual(res[i][0], TestSearch.magnitudes[i][0])
-            self.assertEqual(res[i][1], TestSearch.magnitudes[i][1])
+            self.assertEqual(res[i][0], TestSearch.magnitudes[i][0])
+            self.assertAlmostEqual(res[i][1], TestSearch.magnitudes[i][1])
 
 
 if __name__ == "__main__":

@@ -18,8 +18,9 @@ S = None
 
 
 def get_contents(indicies):
+    indicies_dict = { idx: new_idx for new_idx, idx in enumerate(indicies) }
     indicies = np.sort(indicies)
-    contents = []
+    contents = [None for _ in range(len(indicies))]
 
     with open(f"{os.path.dirname(__file__)}/{constants.FILES_PATH}/{constants.DOCUMENTS_NAME}", "r", encoding="utf8") as file:
         data = json_stream.load(file)
@@ -27,7 +28,7 @@ def get_contents(indicies):
         j = 0
         for i, d in enumerate(data):
             if i == indicies[j]:
-                contents.append(d)
+                contents[indicies_dict[i]] = d
                 j += 1
                 if j >= len(indicies): break
 

@@ -54,7 +54,7 @@ def search(request):
     #
     # Return documents content
     #
-    return HttpResponse(json.dumps(storage.get_contents(np.array([i for _, i in M], dtype=np.uint16))), content_type="application/json")
+    return HttpResponse(json.dumps(storage.get_contents(np.array([i for i, _ in M], dtype=np.uint16))), content_type="application/json")
 
 def count(request):
     # c = 0

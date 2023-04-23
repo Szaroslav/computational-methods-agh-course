@@ -73,8 +73,9 @@ def sparse_matrix(vector: dict[str, int], words_dict: dict[str, int], j: int) ->
 
     return sparse_matrix
 
-def document_frequency(vector: dict[str, int], words_dict: dict[str, int]) -> np.ndarray:
-    doc_frequency = np.zeros(len(words_dict))
+def document_frequency(vector: dict[str, int], words_dict: dict[str, int], doc_frequency: np.ndarray | None = None) -> np.ndarray:
+    if doc_frequency is None:
+        doc_frequency = np.zeros(len(words_dict))
 
     for key in vector:
         if words_dict.get(key) is not None:
@@ -127,7 +128,7 @@ def create_json_docs():
                 parser = wp.WikiParser(file)
                 while (pd := parser.parse_document()) != (None, None):
                     clean_content = clean(pd[0])
-                    print(clean_content)
+                    # print(clean_content)
                     # for i in range(len(clean_content)):
                     #     if ord(clean_content[i]) == 55308:
                     #         clean_content[i] = ' '
@@ -164,7 +165,7 @@ def create():
     #
     print("Iterating over every document available in the dumps...")
     rows, cols, values = [], [], []
-    doc_f = np.zeros(len(wd))
+    doc_f = np.zeros(m)
     for filename in FILENAMES:
         with open(f"{CURRENT_PATH}/{FILES_PATH}/{filename}", "r", encoding="utf8") as file:
             parser = wp.WikiParser(file)
@@ -172,9 +173,9 @@ def create():
             while (pd := parser.parse_document()) != (None, None):
                 words = tokenize(clean(pd[0]).lower())
                 dj = frequency_vector(words)
-                doc_f += document_frequency(dj, wd)
+                doc_f = document_frequency(dj, wd, doc_f)
                 # norm2_dj = reduce(lambda acc, x: acc + x**2, [f for f in dj.values()], 0)**.5
-                dj = { key: value for key, value in dj.items() }
+                # dj = { key: value for key, value in dj.items() }
 
                 r, c, v = sparse_matrix(dj, wd, n)
                 rows += r
@@ -194,7 +195,12 @@ def create():
     print(m, n, len(rows))
 
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENT_TERM_NAME}", "w") as file:
-        data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
+        data = []
+        for r, c, v in zip(rows, cols, values):
+            if v > 0:
+                data.append({ "row": r, "col": c, "value": v })
+        
+        # data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
         storage.sparse_matrix = data
         cache.set("sparse_matrix", data)
         file.write(json.dumps({
@@ -258,7 +264,7 @@ def load():
             for i in range(len(storage.sparse_matrix)):
                 el = storage.sparse_matrix[i]
                 el["value"] /= norms2[el["col"]]
-            cache.set("sparse_matrix", storage.sparse_matrix)
+            cache.set("sparse_matrix", storage.sparse_matrix)    
 
 def create_test_file():
     # with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.xml", "r") as file:
