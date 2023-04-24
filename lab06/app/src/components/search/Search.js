@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChessKnight } from '@fortawesome/free-solid-svg-icons'
 import './Search.css';
 
 function Search(props) {
@@ -20,7 +22,7 @@ function Search(props) {
 
     return (
         <div className="search-container">
-            <h1>Chess search</h1>
+            <h1><FontAwesomeIcon icon={ faChessKnight } /> Chess Search</h1>
             <form onSubmit={ handleSearch } className="search-form">
                 <input type="search" value={ query } onChange={ handleQuery } className="search-input"/>
                 <input type="submit" value="Search" className="search-button" />

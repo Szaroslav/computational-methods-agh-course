@@ -12,6 +12,7 @@
 .search-container h1 {
     font-size: 4rem;
     color: #f5f5f5;
+    text-transform: uppercase;
 }
 
 .search-form {
