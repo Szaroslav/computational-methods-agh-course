@@ -16,6 +16,8 @@ def search(request):
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
         db.init.load()
+    else:
+        storage.load()
 
     q = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))

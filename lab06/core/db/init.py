@@ -187,7 +187,7 @@ def create():
     #
     # Create JSON of document contents
     #
-    create_json_docs()
+    # create_json_docs()
 
     wd = bag_of_words()
     m = len(wd)
@@ -283,6 +283,7 @@ def load():
                 values.append(el["value"])
             storage.scipy_s_matrix = csc_array((values, (rows, cols)), shape=(m, n))
             storage.U, storage.D, storage.V = svds(storage.scipy_s_matrix, k=K)
+            cache.set("U", storage.U)
 
             S = np.zeros((K, n))
             storage.S = S
@@ -307,6 +308,8 @@ def load():
                 el = storage.sparse_matrix[i]
                 el["value"] /= norms2[el["col"]]
             cache.set("sparse_matrix", storage.sparse_matrix)    
+
+        storage.load()
 
 def create_test_file():
     # with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.xml", "r") as file:
