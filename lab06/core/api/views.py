@@ -15,12 +15,15 @@ nltk.download('punkt')
 def search(request):
     print("Looking for most relavant documents...")
     if cache.get("sparse_matrix") is None and (db.init.K is None or db.init.K < 1 or cache.get("S") is None):
-        db.init.create()
+        db.init.load()
 
     q = request.GET.get("q", "")
     k = int(request.GET.get("k", "0"))
 
-    M = sr.search(storage.sparse_matrix, storage.sparse_matrix_dims, storage.bow, q, k, constants.K)
+    if constants.K is not None and constants.K >= 1:
+        M = sr.search(q, storage.sparse_matrix_dims, storage.bow, U=storage.U, S=storage.S, k=k, K=constants.K)
+    else:
+        M = sr.search(q, storage.sparse_matrix_dims, storage.bow, sparse=storage.sparse_matrix, k=k)
     print(M)
 
     #

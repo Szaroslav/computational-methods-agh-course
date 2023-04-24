@@ -170,7 +170,7 @@ def create_json_docs():
     print("Creating JSON of document contents...")
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENTS_NAME}", "w", encoding="utf8") as jsonf:
         data = json_docs()
-        json.dump(data, jsonf, ensure_ascii=False, indent=4)
+        json.dump(data, jsonf, ensure_ascii=False)
         jsonf.close()
 
 def create():  
@@ -190,8 +190,6 @@ def create():
 
     wd = bag_of_words()
     m = len(wd)
-    print(m)
-
 
     #
     # Iterate over every document available in the dumps
@@ -225,7 +223,7 @@ def create():
     for k, i in enumerate(rows):
         values[k] *= IDF[i]
 
-    print(m, n, len(rows))
+    print(f"m: {m}, n: {n}, sparse: {len(rows)}")
 
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENT_TERM_NAME}", "w") as file:
         data = []

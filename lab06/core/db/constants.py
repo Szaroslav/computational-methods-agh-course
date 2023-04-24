@@ -4,7 +4,7 @@ FILENAMES: list[str] = [
 ]
 FILES_PATH = "files"
 DOCUMENT_TERM_NAME = "dt-sparse.test.min.json"
-DOCUMENTS_NAME = "documents.test.json"
+DOCUMENTS_NAME = "documents.test.min.json"
 STOP_WORDS = [
     "a",
     "about",
