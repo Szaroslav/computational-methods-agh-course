@@ -19,7 +19,7 @@ def search(query, dims, bow, **kwargs) -> np.ndarray:
     if query_norm <= 0:
         indicies = np.arange(dims[1])
         np.random.shuffle(indicies)
-        return np.array([(0, i) for i in indicies[:k]])
+        return np.array([(i, 0) for i in indicies[:k]])
 
     #
     # Evaluate partially document frequencies (q^T U_k s_j) including query vector (cos(\phi))
@@ -34,7 +34,6 @@ def search(query, dims, bow, **kwargs) -> np.ndarray:
         for i in range(dims[0]):
             if query[i]:
                 for j in range(K):
-                    print(i, j)
                     v[j] += query[i] * U[i][j]
         M = np.array([abs((v @ S[:, j]) / query_norm) for j in range(dims[1])])
 

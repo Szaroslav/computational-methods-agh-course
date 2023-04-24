@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 from copy import copy
 from scipy.sparse import coo_matrix
@@ -216,6 +217,10 @@ def create():
                 n += 1
                 # print(n)
 
+    #
+    # Apply IDF (Inverse Document Frequency)
+    #
+    print("Applying IDF (Inverse Document Frequency)...")
     IDF = np.empty(m)
     for i in range(m):
         IDF[i] = idf(i)
@@ -225,7 +230,12 @@ def create():
 
     print(f"m: {m}, n: {n}, sparse: {len(rows)}")
 
+    #
+    # Save sparse matrix to JSON file
+    #
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENT_TERM_NAME}", "w") as file:
+        print("Saving sparse matrix to JSON file...")
+
         data = []
         for r, c, v in zip(rows, cols, values):
             if v > 0:
@@ -259,6 +269,7 @@ def load():
             storage.sparse_matrix[i]["col"]     = el["col"]
             storage.sparse_matrix[i]["value"]   = el["value"]
             norms2[el["col"]]                  += el["value"]**2
+        # print(f"Sparse matrixe size: {sys.getsizeof(storage.sparse_matrix)}")
 
         storage.bow = bag_of_words()
         cache.set("bag_of_words", storage.bow)
