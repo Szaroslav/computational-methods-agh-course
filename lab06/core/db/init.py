@@ -78,6 +78,7 @@ def clean(str: str) -> str:
 
     return str
 
+
 def words_dict(words: list[str]) -> dict[str, int]:
     words_dict: dict[str, int] = {}
 
@@ -85,8 +86,9 @@ def words_dict(words: list[str]) -> dict[str, int]:
         word = stemmer.stem(word)
         if words_dict.get(word) is None:
             words_dict[word] = 0
-    
+
     return words_dict
+
 
 def frequency_vector(words: list[str]) -> dict[str, int]:
     frequency_vector: dict[str, int] = {}
@@ -96,8 +98,9 @@ def frequency_vector(words: list[str]) -> dict[str, int]:
         if frequency_vector.get(word) is None:
             frequency_vector[word] = 0
         frequency_vector[word] += 1
-    
+
     return frequency_vector
+
 
 def sparse_matrix(vector: dict[str, int], words_dict: dict[str, int], j: int) -> tuple[list[int], list[int], list[float]]:
     sparse_matrix: tuple[list[int], list[int], list[float]] = ([], [], [])
@@ -111,6 +114,7 @@ def sparse_matrix(vector: dict[str, int], words_dict: dict[str, int], j: int) ->
 
     return sparse_matrix
 
+
 def document_frequency(vector: dict[str, int], words_dict: dict[str, int], doc_frequency: np.ndarray | None = None) -> np.ndarray:
     if doc_frequency is None:
         doc_frequency = np.zeros(len(words_dict))
@@ -121,6 +125,7 @@ def document_frequency(vector: dict[str, int], words_dict: dict[str, int], doc_f
 
     return doc_frequency
 
+
 def remove_stop_words(wd: dict[str, int]) -> dict[str, int]:
     print("Removing stop words from the dictionary...")
     for word in STOP_WORDS:
@@ -128,6 +133,7 @@ def remove_stop_words(wd: dict[str, int]) -> dict[str, int]:
             wd.pop(word)
 
     return wd
+
 
 def bag_of_words() -> dict[str, int]:
     #
@@ -144,7 +150,7 @@ def bag_of_words() -> dict[str, int]:
                 content, _ = pd
                 words = tokenize(clean(content).lower())
                 wd.update(words_dict(words))
-    
+
     #
     # Remove stop words from the dictionary
     #
@@ -157,6 +163,7 @@ def bag_of_words() -> dict[str, int]:
         wd[key] = i
 
     return wd
+
 
 def create_json_docs():
     @json_stream.streamable_list
@@ -174,7 +181,8 @@ def create_json_docs():
         json.dump(data, jsonf, ensure_ascii=False)
         jsonf.close()
 
-def create():  
+
+def create():
     n: int = 0
     m: int = 0
 
@@ -239,18 +247,19 @@ def create():
         data = []
         for r, c, v in zip(rows, cols, values):
             if v > 0:
-                data.append({ "row": r, "col": c, "value": v })
-        
+                data.append({"row": r, "col": c, "value": v})
+
         # data = [{ "row": r, "col": c, "value": v } for r, c, v in zip(rows, cols, values)]
         storage.sparse_matrix = data
-        cache.set("sparse_matrix", data)
+        # cache.set("sparse_matrix", data)
         file.write(json.dumps({
-            "dimensions": { "m": m, "n": n, "sparse_length": len(data) },
+            "dimensions": {"m": m, "n": n, "sparse_length": len(data)},
             "data": data
         }))
         file.close()
 
     print(f"{m}, {n}")
+
 
 def load():
     with open(f"{CURRENT_PATH}/{FILES_PATH}/{DOCUMENT_TERM_NAME}", "r", encoding="utf8") as file:
@@ -258,17 +267,19 @@ def load():
 
         data = json_stream.load(file)
         dimensions = data["dimensions"].persistent()
+        # print(f"m: {dimensions['m']}, n: {dimensions['n']}")
 
         storage.sparse_matrix_dims = (dimensions["m"], dimensions["n"])
         cache.set("sparse_matrix_dims", storage.sparse_matrix_dims)
         norms2 = np.zeros(storage.sparse_matrix_dims[1])
 
-        storage.sparse_matrix = np.empty(dimensions["sparse_length"], dtype=storage.dt)
+        storage.sparse_matrix = np.empty(
+            dimensions["sparse_length"], dtype=storage.dt)
         for i, el in enumerate(data["data"].persistent()):
-            storage.sparse_matrix[i]["row"]     = el["row"]
-            storage.sparse_matrix[i]["col"]     = el["col"]
-            storage.sparse_matrix[i]["value"]   = el["value"]
-            norms2[el["col"]]                  += el["value"]**2
+            storage.sparse_matrix[i]["row"] = el["row"]
+            storage.sparse_matrix[i]["col"] = el["col"]
+            storage.sparse_matrix[i]["value"] = el["value"]
+            norms2[el["col"]] += el["value"]**2
         # print(f"Sparse matrixe size: {sys.getsizeof(storage.sparse_matrix)}")
 
         storage.bow = bag_of_words()
@@ -281,7 +292,8 @@ def load():
                 rows.append(el["row"])
                 cols.append(el["col"])
                 values.append(el["value"])
-            storage.scipy_s_matrix = csc_array((values, (rows, cols)), shape=(m, n))
+            storage.scipy_s_matrix = csc_array(
+                (values, (rows, cols)), shape=(m, n))
             storage.U, storage.D, storage.V = svds(storage.scipy_s_matrix, k=K)
             cache.set("U", storage.U)
 
@@ -307,9 +319,10 @@ def load():
             for i in range(len(storage.sparse_matrix)):
                 el = storage.sparse_matrix[i]
                 el["value"] /= norms2[el["col"]]
-            cache.set("sparse_matrix", storage.sparse_matrix)    
+            cache.set("sparse_matrix", storage.sparse_matrix)
 
         storage.load()
+
 
 def create_test_file():
     # with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.xml", "r") as file:
@@ -325,7 +338,7 @@ def create_test_file():
     #                     wfile.write(doc)
     #                     break
     #         wfile.close()
-    
+
     with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.xml", "r") as file:
         with open(f"{CURRENT_PATH}/{FILES_PATH}/chesswiki.test.xml", "w", encoding="utf8") as wfile:
             parser = wp.WikiParser(file)
@@ -338,7 +351,7 @@ def create_test_file():
 
                 content, doc = pd
                 wfile.write(doc)
-            
+
             wfile.close()
 
 

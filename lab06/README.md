@@ -1,7 +1,22 @@
 # Wyszukiwarka
 
+## Konfiguracja
+Wyszukiwarkę można skonfigurować za pomocą 4 parametrów znajdujących się w `core/db/constants.py`:
+- `K` - liczba kolumn do redukcji SVD, jeśli `None`, wtedy jest wybierany wariant bez redukcji;
+- `FILENAMES`* - plik(i) `XML` Wikipedii;
+- `DOCUMENT_TERM_NAME`* - macierz rzadka artykułów;
+- `DOCUMENTS_NAME`* - tablica treści artykułów.
+
+_\* Muszą być to te same pliki, tj bez lub z `.test` w nazwie._
+
 ## Pozyskanie bazy danych
 Na początku pobrałem cały [zbiór Wikipedii z dnia 7.04.2023](https://dumps.wikimedia.org/enwiki/20230401/) w formacie `XML`. Wyłuskałem wszyskie artykuły, które zawierały słowo kluczowe _chess_, po czym przeszedłem do analizy i konwertowania danych.
+
+Z pobranych artykułów powstały 2 zbiory danych:
+- standardowy - zawiera 25 189 artykułów i słów 929 841;
+- testowy - dane zostały zredukowane do 900 pierwszych artykułów zbioru standardowego, zawiera 133 302 słów.
+
+Ilość słów jest zawyżona przez liczby, daty, apostrofy, różne odmiany słów, myślniki, nazwy własne oraz niedoskonałość wykorzystanego parsera do języka znaczników wykorzystywanych przez Wiki (mogą np. pojawić się potrójne apostrofy w słowie).
 
 ## Konwertowanie danych
 Dane zostały skonwertowane i zapisane w plikach `JSON` według podpunktów 2 - 8, niekoniecznie program to robi zgodnie z kolejnością występującą w treści zestawu.

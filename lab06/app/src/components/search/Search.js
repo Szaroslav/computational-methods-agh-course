@@ -13,8 +13,8 @@ function Search(props) {
     function handleSearch(event) {
         event.preventDefault();
 
-        console.log(`http://localhost:9001/api/search?q=${encodeURIComponent(query)}&k=25`);
-        fetch(`http://localhost:9001/api/search?q=${encodeURIComponent(query)}&k=25`)
+        console.log(`http://localhost:8000/api/search?q=${encodeURIComponent(query)}&k=25`);
+        fetch(`http://localhost:8000/api/search?q=${encodeURIComponent(query)}&k=25`)
             .then(response => response.json())
             .then(json => props.updateSearchData(json))
             .catch(error => console.error(error));
